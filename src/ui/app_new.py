@@ -575,17 +575,33 @@ def transcript_page():
             st.error(f"❌ Failed to prepare download: {e}")
 
     with col3:
-        if st.button("🗑️ Delete Job", use_container_width=True, type="secondary"):
-            if st.button("⚠️ Confirm Delete", use_container_width=True):
-                try:
-                    with st.spinner("Deleting..."):
-                        st.session_state.api_client.delete_job(job_id)
-                        st.success("✅ Job deleted")
-                        st.session_state.selected_job_id = None
-                        st.session_state.current_page = "Jobs"
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Delete failed: {e}")
+        # Initialize delete confirmation state
+        if "confirm_delete" not in st.session_state:
+            st.session_state.confirm_delete = False
+
+        if not st.session_state.confirm_delete:
+            if st.button("🗑️ Delete Job", use_container_width=True, type="secondary"):
+                st.session_state.confirm_delete = True
+                st.rerun()
+        else:
+            col_confirm, col_cancel = st.columns(2)
+            with col_confirm:
+                if st.button("⚠️ Confirm", use_container_width=True, type="primary"):
+                    try:
+                        with st.spinner("Deleting..."):
+                            st.session_state.api_client.delete_job(job_id)
+                            st.session_state.confirm_delete = False
+                            st.success("✅ Job deleted")
+                            st.session_state.selected_job_id = None
+                            st.session_state.current_page = "Jobs"
+                            st.rerun()
+                    except Exception as e:
+                        st.session_state.confirm_delete = False
+                        st.error(f"❌ Delete failed: {e}")
+            with col_cancel:
+                if st.button("✖️ Cancel", use_container_width=True):
+                    st.session_state.confirm_delete = False
+                    st.rerun()
 
 
 def main():

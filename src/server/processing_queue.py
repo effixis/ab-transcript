@@ -157,15 +157,7 @@ class ProcessingQueue:
                 except Empty:
                     continue
 
-                # Check if we have available workers
-                with self._lock:
-                    if len(self.running_jobs) >= self.max_workers:
-                        # Put the job back in the queue and wait
-                        self.job_queue.put((priority, job_id))
-                        time.sleep(0.1)
-                        continue
-
-                # Submit job to executor
+                # Submit job to executor (ThreadPoolExecutor handles worker management)
                 logger.info(f"Starting processing for job {job_id}")
                 future = self.executor.submit(self._process_job, job_id)
 

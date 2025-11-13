@@ -70,17 +70,18 @@ class APIClient:
         if not file_path.exists():
             raise FileNotFoundError(f"Audio file not found: {file_path}")
 
-        # Prepare files and data for upload
-        files = {"file": (file_path.name, open(file_path, "rb"))}
+        # Prepare data for upload
         data = {}
-
         if options:
             data["options"] = json.dumps(options)
 
         try:
-            response = self.session.post(f"{self.base_url}/upload", files=files, data=data, timeout=timeout)
-            response.raise_for_status()
-            return response.json()
+            # Use context manager to ensure file is properly closed
+            with open(file_path, "rb") as audio_file:
+                files = {"file": (file_path.name, audio_file)}
+                response = self.session.post(f"{self.base_url}/upload", files=files, data=data, timeout=timeout)
+                response.raise_for_status()
+                return response.json()
         except RequestException as e:
             raise RequestException(f"Upload failed: {e}")
         finally:

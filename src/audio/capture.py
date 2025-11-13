@@ -98,7 +98,9 @@ class AudioCapture:
 
         try:
             device_info = pa.get_device_info_by_index(device_index)
-            channels = min(device_info["maxInputChannels"], 2)
+            max_channels = device_info["maxInputChannels"]
+            # Ensure we have at least 1 channel, maximum 2 (stereo)
+            channels = max(1, min(max_channels, 2)) if max_channels > 0 else 1
             rate = int(device_info["defaultSampleRate"])
 
             stream = pa.open(

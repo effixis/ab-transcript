@@ -109,6 +109,11 @@ def upload_audio():
         allowed_types = ", ".join(ALLOWED_EXTENSIONS)
         return jsonify({"error": f"File type not allowed. Allowed types: {allowed_types}"}), 400
 
+    # Validate filename is not empty after sanitization
+    original_filename = secure_filename(file.filename)
+    if not original_filename:
+        return jsonify({"error": "Invalid filename"}), 400
+
     # Get processing options
     options = {}
     if "options" in request.form:
@@ -126,8 +131,18 @@ def upload_audio():
         temp_file_path = tmp_file.name
 
     try:
-        # Get file size
+        # Get file size and validate
         file_size = os.path.getsize(temp_file_path)
+
+        # Validate file size (additional check beyond Flask's MAX_CONTENT_LENGTH)
+        if file_size == 0:
+            os.unlink(temp_file_path)
+            return jsonify({"error": "Empty file not allowed"}), 400
+
+        # Reasonable minimum size for audio files (1KB)
+        if file_size < 1024:
+            os.unlink(temp_file_path)
+            return jsonify({"error": "File too small to be a valid audio file"}), 400
 
         # Create job
         job_id = job_manager.create_job(original_filename=original_filename, file_size=file_size, options=options)
