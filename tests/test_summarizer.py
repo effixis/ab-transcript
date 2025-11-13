@@ -1,8 +1,9 @@
-from pathlib import Path
 import json
-from openai import OpenAI
-from dotenv import load_dotenv
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from openai import OpenAI
 
 """
 poetry run python tests/test_summarizer.py
@@ -21,8 +22,10 @@ You are an assistant creating concise meeting minutes.
 Summarize this transcript clearly by topic, including decisions and next actions.
 
 Transcript:
-{transcript['combined_text']}
+{transcript["combined_text"]}
 """
+
+
 class MeetingSummarizer:
     def __init__(self, token, model="gpt-4"):
         self.client = OpenAI()
@@ -34,10 +37,11 @@ class MeetingSummarizer:
             model=self.model,
             messages=[
                 {"role": "system", "content": "You are a meeting summarizer."},
-                {"role": "user", "content": text}
-            ]
+                {"role": "user", "content": text},
+            ],
         )
         return response.choices[0].message.content
+
 
 # Save the summary to a text file
 summary = MeetingSummarizer(api_key).summarize(prompt)

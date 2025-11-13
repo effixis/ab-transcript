@@ -15,24 +15,25 @@ Key features:
 
 import os
 import wave
-import numpy as np
 from typing import Dict, List
+
+import numpy as np
 
 
 def format_timestamp(seconds: float) -> str:
     """
     Format seconds as MM:SS or HH:MM:SS.
-    
+
     Args:
         seconds: Time in seconds
-        
+
     Returns:
         Formatted time string
     """
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = int(seconds % 60)
-    
+
     if hours > 0:
         return f"{hours:02d}:{minutes:02d}:{secs:02d}"
     return f"{minutes:02d}:{secs:02d}"
@@ -41,46 +42,42 @@ def format_timestamp(seconds: float) -> str:
 def categorize_devices(devices: List[Dict]) -> Dict[str, List[Dict]]:
     """
     Categorize audio devices by type (input, output, loopback).
-    
+
     Separates devices into categories based on their capabilities. Loopback
     devices are identified by name, input devices by maxInputChannels > 0,
     and output devices by maxOutputChannels > 0.
-    
+
     Args:
         devices: List of device information dictionaries from AudioCapture.list_devices()
-        
+
     Returns:
         Dictionary with keys 'input', 'output', 'loopback', each containing a list
         of device dictionaries
     """
-    categorized = {
-        'input': [],
-        'output': [],
-        'loopback': []
-    }
-    
+    categorized = {"input": [], "output": [], "loopback": []}
+
     for device in devices:
-        if device.get('isLoopback', False):
-            categorized['loopback'].append(device)
-        elif device['maxInputChannels'] > 0:
-            categorized['input'].append(device)
-        elif device['maxOutputChannels'] > 0:
-            categorized['output'].append(device)
-    
+        if device.get("isLoopback", False):
+            categorized["loopback"].append(device)
+        elif device["maxInputChannels"] > 0:
+            categorized["input"].append(device)
+        elif device["maxOutputChannels"] > 0:
+            categorized["output"].append(device)
+
     return categorized
 
 
 def get_audio_duration(filepath: str) -> float:
     """
     Get duration of a WAV file in seconds.
-    
+
     Args:
         filepath: Path to WAV file
-        
+
     Returns:
         Duration in seconds
     """
-    with wave.open(filepath, 'rb') as wf:
+    with wave.open(filepath, "rb") as wf:
         frames = wf.getnframes()
         rate = wf.getframerate()
         return frames / float(rate)
@@ -102,11 +99,10 @@ def normalize_audio(audio: np.ndarray) -> np.ndarray:
     return audio
 
 
-def mix_wav_files(filepaths: List[str],
-                  target_rate: int = 48000) -> np.ndarray:
+def mix_wav_files(filepaths: List[str], target_rate: int = 48000) -> np.ndarray:
     """
     Mix multiple WAV files into a single audio stream with equal weighting.
-    
+
     Loads multiple WAV files, normalizes each individually to ensure equal
     contribution regardless of original volume, resamples to target rate if
     needed, and mixes by averaging. Useful for combining microphone and
@@ -127,7 +123,7 @@ def mix_wav_files(filepaths: List[str],
         if not os.path.exists(filepath):
             continue
 
-        with wave.open(filepath, 'rb') as wf:
+        with wave.open(filepath, "rb") as wf:
             n_channels = wf.getnchannels()
             rate = wf.getframerate()
             n_frames = wf.getnframes()
@@ -143,12 +139,11 @@ def mix_wav_files(filepaths: List[str],
                 duration = len(audio) / rate
                 target_length = int(duration * target_rate)
                 audio = np.interp(
-                    np.linspace(0, len(audio), target_length,
-                                dtype=np.float32),
+                    np.linspace(0, len(audio), target_length, dtype=np.float32),
                     np.arange(len(audio), dtype=np.float32),
-                    audio
+                    audio,
                 )
-            
+
             # Normalize each audio stream individually before mixing
             # This ensures microphone and loopback have equal weight
             max_val = np.max(np.abs(audio))
@@ -184,11 +179,10 @@ def mix_wav_files(filepaths: List[str],
     return mixed_audio
 
 
-def save_audio_array(audio: np.ndarray, filepath: str,
-                     rate: int = 48000, channels: int = 1):
+def save_audio_array(audio: np.ndarray, filepath: str, rate: int = 48000, channels: int = 1):
     """
     Save audio array to WAV file.
-    
+
     Converts float32 audio data to int16 format and writes to WAV file.
 
     Args:
@@ -199,7 +193,7 @@ def save_audio_array(audio: np.ndarray, filepath: str,
     """
     audio_int = (audio * 32767).astype(np.int16)
 
-    with wave.open(filepath, 'wb') as wf:
+    with wave.open(filepath, "wb") as wf:
         wf.setnchannels(channels)
         wf.setsampwidth(2)
         wf.setframerate(rate)
@@ -209,7 +203,7 @@ def save_audio_array(audio: np.ndarray, filepath: str,
 def get_audio_level(audio: np.ndarray) -> float:
     """
     Calculate RMS (Root Mean Square) audio level.
-    
+
     Provides a measure of audio loudness/amplitude.
 
     Args:
@@ -218,4 +212,4 @@ def get_audio_level(audio: np.ndarray) -> float:
     Returns:
         RMS level as float (higher values indicate louder audio)
     """
-    return float(np.sqrt(np.mean(audio ** 2)))
+    return float(np.sqrt(np.mean(audio**2)))

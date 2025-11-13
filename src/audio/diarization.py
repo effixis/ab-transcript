@@ -16,13 +16,13 @@ to prevent torchaudio from interfering with PyAudio's recording functionality.
 """
 
 import os
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 
 class PyannoteDiarizer:
     """
     Handle speaker diarization using pyannote.audio.
-    
+
     Identifies different speakers in audio recordings and provides timestamps
     for when each speaker is active. Uses lazy loading to avoid conflicts with
     audio recording libraries.
@@ -42,23 +42,20 @@ class PyannoteDiarizer:
     def _load_pipeline(self):
         """
         Load the pyannote diarization pipeline (lazy loading).
-        
+
         Imports pyannote modules only when needed to avoid conflicts with PyAudio.
         The import at module level would load torchaudio and set a global audio
         backend that interferes with PyAudio's recording.
         """
         if self._pipeline_loaded:
             return
-        
+
         try:
             # Import pyannote ONLY when loading pipeline (not at module import time)
             from pyannote.audio import Pipeline
-            
+
             print("Loading diarization pipeline...")
-            self.pipeline = Pipeline.from_pretrained(
-                "pyannote/speaker-diarization-3.1",
-                use_auth_token=self.hf_token
-            )
+            self.pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", use_auth_token=self.hf_token)
             self._pipeline_loaded = True
             print("✓ Diarization pipeline loaded")
         except Exception as e:
@@ -69,7 +66,7 @@ class PyannoteDiarizer:
     def diarize(self, audio_path: str) -> Optional[List[Tuple[float, float, str]]]:
         """
         Perform speaker diarization on an audio file.
-        
+
         Analyzes the audio to identify different speakers and when they speak.
         Returns segments with speaker labels that can be matched to transcription
         segments using timestamps.
@@ -85,7 +82,7 @@ class PyannoteDiarizer:
         # Lazy load the pipeline on first use
         if not self._pipeline_loaded:
             self._load_pipeline()
-        
+
         if not self.pipeline:
             print("⚠ Diarization pipeline not available")
             return None
@@ -97,7 +94,7 @@ class PyannoteDiarizer:
         try:
             # Import ProgressHook only when needed
             from pyannote.audio.pipelines.utils.hook import ProgressHook
-            
+
             # Check if audio file is empty or too small
             file_size = os.path.getsize(audio_path)
             if file_size < 1000:
@@ -119,12 +116,11 @@ class PyannoteDiarizer:
 
 
 def assign_speakers_to_segments(
-    whisper_segments: List[dict],
-    diarization_segments: List[Tuple[float, float, str]]
+    whisper_segments: List[dict], diarization_segments: List[Tuple[float, float, str]]
 ) -> List[dict]:
     """
     Assign speaker labels to Whisper transcription segments using timestamp overlap.
-    
+
     Matches each transcription segment to a speaker by finding the diarization segment
     with the most temporal overlap. This combines the text from Whisper with the
     speaker identification from pyannote.
@@ -143,8 +139,8 @@ def assign_speakers_to_segments(
     result_segments = []
 
     for segment in whisper_segments:
-        seg_start = segment['start']
-        seg_end = segment['end']
+        seg_start = segment["start"]
+        seg_end = segment["end"]
 
         # Find overlapping diarization segments
         overlaps = []
@@ -165,7 +161,7 @@ def assign_speakers_to_segments(
             assigned_speaker = "UNKNOWN"
 
         result_segment = segment.copy()
-        result_segment['speaker'] = assigned_speaker
+        result_segment["speaker"] = assigned_speaker
         result_segments.append(result_segment)
 
     return result_segments

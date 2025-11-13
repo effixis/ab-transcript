@@ -21,9 +21,8 @@ from src.audio import (
     categorize_devices,
     get_audio_level,
     mix_wav_files,
-    save_audio_array
+    save_audio_array,
 )
-
 
 DURATION = 15
 OUTPUT_DIR = "src/saved_audio"
@@ -38,31 +37,28 @@ def display_devices_with_levels(capture):
     categorized = categorize_devices(devices)
 
     print("\nINPUT DEVICES:")
-    if categorized['input']:
-        for dev in categorized['input']:
-            level = capture.get_audio_level(dev['index'], duration=0.2)
-            level_bar = '█' * int(level * 20)
+    if categorized["input"]:
+        for dev in categorized["input"]:
+            level = capture.get_audio_level(dev["index"], duration=0.2)
+            level_bar = "█" * int(level * 20)
             print(f"  [{dev['index']:2d}] {dev['name']}")
-            print(f"       Channels: {dev['maxInputChannels']}, "
-                  f"Rate: {dev['defaultSampleRate']:.0f}Hz")
+            print(f"       Channels: {dev['maxInputChannels']}, Rate: {dev['defaultSampleRate']:.0f}Hz")
             print(f"       Level: [{level_bar:<20}] {level:.3f}")
     else:
         print("  No input devices found")
 
     print("\nLOOPBACK DEVICES (System Audio):")
-    if categorized['loopback']:
-        for dev in categorized['loopback']:
+    if categorized["loopback"]:
+        for dev in categorized["loopback"]:
             print(f"  [{dev['index']:2d}] {dev['name']}")
-            print(f"       Channels: {dev['maxInputChannels']}, "
-                  f"Rate: {dev['defaultSampleRate']:.0f}Hz")
+            print(f"       Channels: {dev['maxInputChannels']}, Rate: {dev['defaultSampleRate']:.0f}Hz")
     else:
         print("  No loopback devices found")
 
     print("\nOUTPUT DEVICES:")
-    for dev in categorized['output']:
+    for dev in categorized["output"]:
         print(f"  [{dev['index']:2d}] {dev['name']}")
-        print(f"       Channels: {dev['maxOutputChannels']}, "
-              f"Rate: {dev['defaultSampleRate']:.0f}Hz")
+        print(f"       Channels: {dev['maxOutputChannels']}, Rate: {dev['defaultSampleRate']:.0f}Hz")
 
     print("\nGUIDE:")
     print("- Select microphone for voice recording")
@@ -94,38 +90,32 @@ def interactive_test():
         mic_info = devices[mic_index]
         loopback_info = devices[loopback_index]
 
-        if mic_info['maxInputChannels'] <= 0:
+        if mic_info["maxInputChannels"] <= 0:
             print("\n❌ Error: Selected microphone is not an input device")
             return
 
-        if loopback_info['maxInputChannels'] <= 0:
+        if loopback_info["maxInputChannels"] <= 0:
             print("\n❌ Error: Selected device is not an input device")
             return
 
         device_indices = [mic_index, loopback_index]
-        device_names = [mic_info['name'], loopback_info['name']]
-        channels_list = [
-            min(mic_info['maxInputChannels'], 2),
-            min(loopback_info['maxInputChannels'], 2)
-        ]
-        rates = [
-            int(mic_info['defaultSampleRate']),
-            int(loopback_info['defaultSampleRate'])
-        ]
+        device_names = [mic_info["name"], loopback_info["name"]]
+        channels_list = [min(mic_info["maxInputChannels"], 2), min(loopback_info["maxInputChannels"], 2)]
+        rates = [int(mic_info["defaultSampleRate"]), int(loopback_info["defaultSampleRate"])]
 
         print("\n✓ Selected devices:")
         print(f"  Microphone: {mic_info['name']}")
         print(f"  Loopback:   {loopback_info['name']}")
 
         confirm = input("\nProceed with recording? (y/n): ").strip().lower()
-        if confirm != 'y':
+        if confirm != "y":
             print("Recording cancelled.")
             return
 
         print("\nRECORDING AUDIO")
         print("-" * 50)
         for i, name in enumerate(device_names):
-            print(f"Device {i+1}: {name}")
+            print(f"Device {i + 1}: {name}")
             print(f"Settings: {rates[i]}Hz, {channels_list[i]} channel(s)")
         print(f"Duration: {DURATION} seconds")
         print("-" * 50)
@@ -136,30 +126,26 @@ def interactive_test():
             channels_list=channels_list,
             rates=rates,
             duration=DURATION,
-            output_dir=OUTPUT_DIR
+            output_dir=OUTPUT_DIR,
         )
 
         print("\n✓ Recordings saved:")
         for file in audio_files:
             print(f"  - {file}")
 
-        transcribe = input(
-            "\nTranscribe recordings? (y/n): "
-        ).strip().lower()
+        transcribe = input("\nTranscribe recordings? (y/n): ").strip().lower()
 
-        if transcribe == 'y':
-            print("\n" + "="*80)
+        if transcribe == "y":
+            print("\n" + "=" * 80)
             print("MIXING AND TRANSCRIBING AUDIO")
-            print("="*80)
+            print("=" * 80)
 
             print("Mixing audio files...")
             mixed_audio = mix_wav_files(audio_files)
-            print(f"✓ Mixed audio length: {len(mixed_audio)/48000:.1f} seconds")
+            print(f"✓ Mixed audio length: {len(mixed_audio) / 48000:.1f} seconds")
 
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            mixed_file = os.path.join(
-                OUTPUT_DIR, f"recording_{timestamp}_mixed.wav"
-            )
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            mixed_file = os.path.join(OUTPUT_DIR, f"recording_{timestamp}_mixed.wav")
 
             print(f"Saving mixed audio to: {mixed_file}")
             save_audio_array(mixed_audio, mixed_file, rate=48000)
@@ -202,6 +188,7 @@ def interactive_test():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -214,6 +201,7 @@ def main():
     except Exception as e:
         print(f"\n\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

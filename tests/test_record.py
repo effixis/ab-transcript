@@ -1,7 +1,13 @@
-import wave
-import pyaudiowpatch as pyaudio
 import os
+import sys
+import wave
 from datetime import datetime
+
+# Platform-specific audio library import
+if sys.platform == "win32":
+    import pyaudiowpatch as pyaudio
+else:
+    import pyaudio
 
 """
 Quick test: 10 seconds record from the default microphone
@@ -26,7 +32,7 @@ print(f"Recording for {DUR} seconds...")
 
 # Create output file in saved_audio directory
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_file = os.path.join(OUTPUT_DIR, f"test_record_{timestamp}.wav")
 
 wf = wave.open(output_file, "wb")
@@ -34,12 +40,14 @@ wf.setnchannels(CH)
 wf.setsampwidth(pa.get_sample_size(pyaudio.paInt16))
 wf.setframerate(RATE)
 
-stream = pa.open(format=pyaudio.paInt16, 
-                 channels=CH, 
-                 rate=RATE,
-                 input=True, 
-                 frames_per_buffer=FRAMES,
-                 input_device_index=default_input["index"])
+stream = pa.open(
+    format=pyaudio.paInt16,
+    channels=CH,
+    rate=RATE,
+    input=True,
+    frames_per_buffer=FRAMES,
+    input_device_index=default_input["index"],
+)
 
 # Record in chunks with progress indicator
 num_chunks = int(RATE / FRAMES * DUR)

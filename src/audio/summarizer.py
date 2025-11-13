@@ -14,14 +14,13 @@ Important: OpenAI client is initialized only when first needed to prevent
 unnecessary API calls and allow for flexible configuration.
 """
 
-import os
 from typing import Optional
 
 
 class MeetingSummarizer:
     """
     Handle meeting summarization using OpenAI API.
-    
+
     Generates concise meeting minutes from transcripts, organizing content
     by topic and highlighting decisions and action items. Uses lazy loading
     to avoid unnecessary API initialization.
@@ -43,18 +42,18 @@ class MeetingSummarizer:
     def _load_client(self):
         """
         Lazy load the OpenAI client.
-        
+
         Imports OpenAI client only when needed to avoid conflicts during
         module import. The import at module level would initialize the client
         immediately, which may not be desired.
         """
         if self._client_loaded:
             return
-        
+
         try:
             # Import OpenAI ONLY when loading client (not at module import time)
             from openai import OpenAI
-            
+
             print("Loading OpenAI client...")
             self.client = OpenAI(api_key=self.api_key)
             self._client_loaded = True
@@ -67,7 +66,7 @@ class MeetingSummarizer:
     def summarize(self, transcript_text: str) -> Optional[str]:
         """
         Generate meeting summary from transcript text.
-        
+
         Creates structured meeting minutes organized by topic, including
         key decisions and action items. Uses OpenAI's chat completion API
         to generate natural, concise summaries.
@@ -80,7 +79,7 @@ class MeetingSummarizer:
         """
         if not self._client_loaded:
             self._load_client()
-        
+
         if not self.client:
             print("⚠ OpenAI client not available")
             return None
@@ -91,7 +90,7 @@ class MeetingSummarizer:
 
         try:
             print(f"Generating summary using {self.model}...")
-            
+
             # Construct prompt for meeting summarization
             prompt = f"""You are an assistant creating concise meeting minutes.
 Summarize this transcript clearly by topic, including decisions and next actions.
@@ -103,17 +102,11 @@ Transcript:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a meeting summarizer."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
+                    {"role": "system", "content": "You are a meeting summarizer."},
+                    {"role": "user", "content": prompt},
+                ],
             )
-            
+
             summary = response.choices[0].message.content
             print("✓ Summary generated successfully")
             return summary
@@ -123,14 +116,10 @@ Transcript:
             return None
 
 
-def summarize_transcript(
-    transcript_text: str,
-    api_key: str,
-    model: str = "gpt-4"
-) -> Optional[str]:
+def summarize_transcript(transcript_text: str, api_key: str, model: str = "gpt-4") -> Optional[str]:
     """
     Convenience function to summarize a transcript.
-    
+
     Creates a MeetingSummarizer instance and generates a summary in one call.
     Useful for simple use cases where you don't need to reuse the summarizer.
 

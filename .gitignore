@@ -13,7 +13,7 @@ src/saved_summary/*
 
 TODO.md
 
-src/audio/__pycache__/
+__pycache__/
 
 # Environment variables and secrets
 .env
@@ -21,3 +21,5 @@ src/audio/__pycache__/
 .env.*.local
 *.key
 secrets.json
+
+server_jobs/

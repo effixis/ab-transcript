@@ -13,21 +13,21 @@ Main components:
 
 Example usage:
     from src.audio import AudioCapture, AudioTranscriber
-    
+
     # Record audio
     capture = AudioCapture()
     devices = capture.list_devices()
     audio_files = capture.record_multi_device(...)
-    
+
     # Transcribe
     transcriber = AudioTranscriber(model_name="base")
     result = transcriber.transcribe_multiple(audio_files, device_names)
 """
 
 from .capture import AudioCapture
-from .transcription import AudioTranscriber
 from .diarization import PyannoteDiarizer, assign_speakers_to_segments
 from .summarizer import MeetingSummarizer, summarize_transcript
+from .transcription import AudioTranscriber
 from .utils import (
     categorize_devices,
     format_timestamp,
@@ -35,21 +35,21 @@ from .utils import (
     get_audio_level,
     mix_wav_files,
     normalize_audio,
-    save_audio_array
+    save_audio_array,
 )
 
 __all__ = [
-    'AudioCapture',
-    'AudioTranscriber',
-    'PyannoteDiarizer',
-    'assign_speakers_to_segments',
-    'MeetingSummarizer',
-    'summarize_transcript',
-    'categorize_devices',
-    'format_timestamp',
-    'get_audio_duration',
-    'get_audio_level',
-    'mix_wav_files',
-    'normalize_audio',
-    'save_audio_array'
+    "AudioCapture",
+    "AudioTranscriber",
+    "PyannoteDiarizer",
+    "assign_speakers_to_segments",
+    "MeetingSummarizer",
+    "summarize_transcript",
+    "categorize_devices",
+    "format_timestamp",
+    "get_audio_duration",
+    "get_audio_level",
+    "mix_wav_files",
+    "normalize_audio",
+    "save_audio_array",
 ]
