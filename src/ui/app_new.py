@@ -26,10 +26,10 @@ from requests.exceptions import ConnectionError
 
 from src.audio import AudioCapture, categorize_devices
 from src.client import APIClient
+from src.config import ConfigManager
 
-# Configuration
+# Configuration defaults
 OUTPUT_DIR = "src/saved_audio"
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:5001")
 
 # Page configuration
 st.set_page_config(page_title="Speech-to-Text App", page_icon="🎙️", layout="wide", initial_sidebar_state="expanded")
@@ -51,8 +51,26 @@ def initialize_session_state():
         st.session_state.recording_thread = None
     if "audio_files" not in st.session_state:
         st.session_state.audio_files = []
+
+    # API Settings with three-tier configuration
+    # Tier 1: Defaults from ConfigManager.DEFAULTS
+    # Tier 2: Environment variables from .env
+    # Tier 3: UI overrides (stored in session state)
+
+    # Initialize UI override values (empty string means "not set by user")
+    if "ui_api_base_url" not in st.session_state:
+        st.session_state.ui_api_base_url = ""  # Empty = not overridden by UI
+    if "ui_llm_api_base_url" not in st.session_state:
+        st.session_state.ui_llm_api_base_url = ""  # Empty = not overridden by UI
+    if "ui_llm_model" not in st.session_state:
+        st.session_state.ui_llm_model = ""  # Empty = not overridden by UI
+    if "ui_llm_api_key" not in st.session_state:
+        st.session_state.ui_llm_api_key = ""  # Empty = not overridden by UI
+
+    # Initialize API client with effective configuration (three-tier precedence)
     if "api_client" not in st.session_state:
-        st.session_state.api_client = APIClient(API_BASE_URL)
+        api_url = ConfigManager.get("API_BASE_URL", st.session_state.ui_api_base_url)
+        st.session_state.api_client = APIClient(api_url)
     if "selected_job_id" not in st.session_state:
         st.session_state.selected_job_id = None
     if "jobs_cache" not in st.session_state:
@@ -66,6 +84,31 @@ def initialize_session_state():
         st.session_state.enable_diarization = True
     if "enable_summarization" not in st.session_state:
         st.session_state.enable_summarization = True
+
+
+def get_effective_config(key: str) -> str:
+    """
+    Get effective configuration value using three-tier precedence.
+
+    Priority: UI override > Environment variable > Default
+    """
+    ui_key = f"ui_{key.lower()}"
+    ui_override = st.session_state.get(ui_key, "")
+    return ConfigManager.get(key, ui_override)
+
+
+def get_api_base_url() -> str:
+    """Get effective API base URL."""
+    return get_effective_config("API_BASE_URL")
+
+
+def get_llm_config() -> dict:
+    """Get effective LLM configuration."""
+    return {
+        "base_url": get_effective_config("LLM_API_BASE_URL"),
+        "model": get_effective_config("LLM_MODEL"),
+        "api_key": get_effective_config("OPENAI_API_KEY"),
+    }
 
 
 def check_api_connection() -> bool:
@@ -103,7 +146,8 @@ def recording_page():
 
     # Check API connection
     if not check_api_connection():
-        st.error(f"⚠️ Cannot connect to API server at {API_BASE_URL}. Make sure the Flask server is running.")
+        api_url = get_api_base_url()
+        st.error(f"⚠️ Cannot connect to API server at {api_url}. Make sure the Flask server is running.")
         st.info(
             "To start the server:\n"
             "```bash\n"
@@ -273,6 +317,16 @@ def recording_page():
                             "enable_summarization": st.session_state.enable_summarization,
                         }
 
+                        # Add LLM settings if summarization is enabled
+                        if st.session_state.enable_summarization:
+                            llm_config = get_llm_config()
+                            if llm_config["base_url"]:
+                                options["llm_api_base_url"] = llm_config["base_url"]
+                            if llm_config["api_key"]:
+                                options["llm_api_key"] = llm_config["api_key"]
+                            if llm_config["model"]:
+                                options["llm_model"] = llm_config["model"]
+
                         # Upload to server
                         result = st.session_state.api_client.upload_audio_file(main_audio_file, options)
 
@@ -303,7 +357,8 @@ def jobs_page():
 
     # Check API connection
     if not check_api_connection():
-        st.error(f"⚠️ Cannot connect to API server at {API_BASE_URL}")
+        api_url = get_api_base_url()
+        st.error(f"⚠️ Cannot connect to API server at {api_url}")
         return
 
     # Refresh controls
@@ -448,7 +503,8 @@ def transcript_page():
 
     # Check API connection
     if not check_api_connection():
-        st.error(f"⚠️ Cannot connect to API server at {API_BASE_URL}")
+        api_url = get_api_base_url()
+        st.error(f"⚠️ Cannot connect to API server at {api_url}")
         return
 
     job_id = st.session_state.selected_job_id
@@ -604,6 +660,187 @@ def transcript_page():
                     st.rerun()
 
 
+def settings_page():
+    """Settings page for API and LLM configuration with three-tier precedence."""
+    st.title("⚙️ Settings")
+
+    st.markdown(
+        """
+    Configure the API endpoints and LLM settings for the application.
+    
+    **Configuration Precedence:**
+    1. 🔵 **Default** - Built-in codebase defaults
+    2. 🟢 **Environment** - Values from `.env` file
+    3. 🟡 **UI Override** - Custom values set here (highest priority)
+    
+    Leave fields empty to use environment or default values.
+    """
+    )
+
+    # API Server Settings
+    st.header("🌐 API Server Settings")
+
+    # Get current effective value and source
+    current_api_url, api_source = ConfigManager.get_display_value("API_BASE_URL", st.session_state.ui_api_base_url)
+
+    # Show current effective configuration
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[api_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[api_source]
+
+    st.info(f"{source_icon} **Currently using:** `{current_api_url}` (from {source_label})")
+
+    api_url_input = st.text_input(
+        "Server API Endpoint Override",
+        value=st.session_state.ui_api_base_url,
+        help="Leave empty to use environment variable or default. Set a value to override.",
+        placeholder=f"Empty = use {'env' if api_source == 'env' else 'default'}: {current_api_url}",
+    )
+
+    if api_url_input != st.session_state.ui_api_base_url:
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("✅ Apply", use_container_width=True, type="primary"):
+                st.session_state.ui_api_base_url = api_url_input
+                # Recreate API client with new effective URL
+                new_url = ConfigManager.get("API_BASE_URL", api_url_input)
+                st.session_state.api_client = APIClient(new_url)
+                st.success("✅ API server endpoint updated!")
+                st.rerun()
+        with col2:
+            if st.button("↩️ Cancel", use_container_width=True):
+                st.rerun()
+
+    # Test connection
+    if st.button("🔍 Test Connection", use_container_width=False):
+        with st.spinner("Testing connection..."):
+            if check_api_connection():
+                st.success("✅ Successfully connected to API server!")
+            else:
+                st.error("❌ Failed to connect to API server. Please check the URL and server status.")
+
+    st.markdown("---")
+
+    # LLM Settings
+    st.header("🤖 LLM Settings for Summarization")
+
+    st.markdown("Configure the LLM endpoint used for meeting summarization.")
+
+    # LLM Base URL
+    current_llm_url, llm_url_source = ConfigManager.get_display_value(
+        "LLM_API_BASE_URL", st.session_state.ui_llm_api_base_url
+    )
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[llm_url_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[llm_url_source]
+    st.info(f"{source_icon} **LLM Base URL:** `{current_llm_url or '(using OpenAI default)'}` (from {source_label})")
+
+    llm_base_url = st.text_input(
+        "LLM API Base URL Override",
+        value=st.session_state.ui_llm_api_base_url,
+        help="Custom API base URL for LLM provider. Leave empty to use environment/default.",
+        placeholder=f"Empty = use {'env' if llm_url_source == 'env' else 'default'}",
+    )
+
+    # LLM Model
+    current_llm_model, llm_model_source = ConfigManager.get_display_value("LLM_MODEL", st.session_state.ui_llm_model)
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[llm_model_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[llm_model_source]
+    st.info(f"{source_icon} **LLM Model:** `{current_llm_model}` (from {source_label})")
+
+    llm_model = st.text_input(
+        "LLM Model Override",
+        value=st.session_state.ui_llm_model,
+        help="Model name to use for summarization. Leave empty to use environment/default.",
+        placeholder=f"Empty = use {'env' if llm_model_source == 'env' else 'default'}: {current_llm_model}",
+    )
+
+    # API Key
+    current_api_key, api_key_source = ConfigManager.get_display_value("OPENAI_API_KEY", st.session_state.ui_llm_api_key)
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[api_key_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[api_key_source]
+    key_display = "***" + current_api_key[-4:] if current_api_key else "(not set)"
+    st.info(f"{source_icon} **API Key:** `{key_display}` (from {source_label})")
+
+    llm_api_key = st.text_input(
+        "LLM API Key Override",
+        value=st.session_state.ui_llm_api_key,
+        type="password",
+        help="API key for authentication. Leave empty to use environment/default.",
+        placeholder="Empty = use environment variable",
+    )
+
+    # Check if any LLM settings changed
+    llm_changed = (
+        llm_base_url != st.session_state.ui_llm_api_base_url
+        or llm_api_key != st.session_state.ui_llm_api_key
+        or llm_model != st.session_state.ui_llm_model
+    )
+
+    if llm_changed:
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("✅ Save LLM Settings", use_container_width=True, type="primary", key="save_llm"):
+                st.session_state.ui_llm_api_base_url = llm_base_url
+                st.session_state.ui_llm_api_key = llm_api_key
+                st.session_state.ui_llm_model = llm_model
+                st.success("✅ LLM settings saved! These will be used for new summarization jobs.")
+                st.rerun()
+        with col2:
+            if st.button("↩️ Cancel", use_container_width=True, key="reset_llm"):
+                st.rerun()
+
+    st.markdown("---")
+
+    # Show all effective configuration
+    st.header("📊 Current Effective Configuration")
+
+    config_data = {
+        "API Server URL": get_effective_config("API_BASE_URL"),
+        "LLM Base URL": get_effective_config("LLM_API_BASE_URL") or "(OpenAI default)",
+        "LLM Model": get_effective_config("LLM_MODEL"),
+        "API Key": "***" + get_effective_config("OPENAI_API_KEY")[-4:]
+        if get_effective_config("OPENAI_API_KEY")
+        else "(not set)",
+    }
+
+    for key, value in config_data.items():
+        st.text(f"{key}: {value}")
+
+    st.markdown("---")
+
+    # Current Settings Summary
+    st.header("📋 Current Configuration")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("API Server")
+        st.code(get_api_base_url())
+
+    with col2:
+        st.subheader("LLM Configuration")
+        llm_config = get_llm_config()
+        if llm_config["base_url"]:
+            st.code(f"Base URL: {llm_config['base_url']}")
+        else:
+            st.code("Base URL: Default (OpenAI)")
+        st.code(f"Model: {llm_config['model']}")
+        if llm_config["api_key"]:
+            st.code(f"API Key: {'*' * 8}{llm_config['api_key'][-4:]}")
+        else:
+            st.warning("⚠️ No API key configured")
+
+    # Info box
+    st.info(
+        """
+    **💡 Note:** 
+    - The Server API Endpoint points to your Flask backend server
+    - LLM settings are used when you enable summarization in recording options
+    - Changes to LLM settings will only affect new transcription jobs
+    - API keys are stored in session state and not persisted
+    """
+    )
+
+
 def main():
     """Main application entry point."""
     initialize_session_state()
@@ -615,8 +852,8 @@ def main():
         # Page selection
         page = st.radio(
             "Navigation",
-            options=["Recording", "Jobs", "Transcript"],
-            index=["Recording", "Jobs", "Transcript"].index(st.session_state.current_page),
+            options=["Recording", "Jobs", "Transcript", "Settings"],
+            index=["Recording", "Jobs", "Transcript", "Settings"].index(st.session_state.current_page),
         )
 
         if page != st.session_state.current_page:
@@ -632,18 +869,7 @@ def main():
         else:
             st.error("🔴 API Server Disconnected")
 
-        st.caption(f"API URL: {API_BASE_URL}")
-
-        # Settings
-        st.markdown("---")
-        st.subheader("Settings")
-
-        # Allow changing API URL
-        new_api_url = st.text_input("API Server URL", value=API_BASE_URL)
-        if new_api_url != API_BASE_URL:
-            st.session_state.api_client = APIClient(new_api_url)
-
-        st.markdown("---")
+        st.caption(f"API URL: {get_api_base_url()}")
 
     # Main content area
     if st.session_state.current_page == "Recording":
@@ -652,6 +878,8 @@ def main():
         jobs_page()
     elif st.session_state.current_page == "Transcript":
         transcript_page()
+    elif st.session_state.current_page == "Settings":
+        settings_page()
 
 
 if __name__ == "__main__":

@@ -26,16 +26,18 @@ class MeetingSummarizer:
     to avoid unnecessary API initialization.
     """
 
-    def __init__(self, api_key: str, model: str = "gpt-4"):
+    def __init__(self, api_key: str, model: str = "gpt-4", base_url: str = None):
         """
         Initialize summarizer with OpenAI API key.
 
         Args:
             api_key: OpenAI API authentication key
             model: OpenAI model to use (default: "gpt-4")
+            base_url: Custom API base URL (optional, for OpenAI-compatible APIs)
         """
         self.api_key = api_key
         self.model = model
+        self.base_url = base_url
         self.client = None
         self._client_loaded = False
 
@@ -55,9 +57,14 @@ class MeetingSummarizer:
             from openai import OpenAI
 
             print("Loading OpenAI client...")
-            self.client = OpenAI(api_key=self.api_key)
+            # Initialize with custom base_url if provided
+            if self.base_url:
+                self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+                print(f"✓ OpenAI client loaded with custom base URL: {self.base_url} (model: {self.model})")
+            else:
+                self.client = OpenAI(api_key=self.api_key)
+                print(f"✓ OpenAI client loaded (model: {self.model})")
             self._client_loaded = True
-            print(f"✓ OpenAI client loaded (model: {self.model})")
         except Exception as e:
             self.client = None
             self._client_loaded = False

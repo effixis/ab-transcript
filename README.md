@@ -36,6 +36,8 @@ A meeting capture solution that records both system audio (from Teams, Zoom, You
 
 ## Features
 
+- **Client-Server Architecture**: Separate Flask API server for processing and Streamlit UI for interaction
+- **Three-Tier Configuration**: Flexible endpoint configuration (Defaults → Environment → UI Settings)
 - **System Audio Recording**: Capture audio from Teams, Zoom, Youtube, or any system audio playing on your device using WASAPI loopback
 - **Microphone Recording**: Simultaneous microphone and system audio capture
 - **Transcription**: Transcription from speech to text using OpenAI Whisper
@@ -68,6 +70,16 @@ pip install poetry
 poetry install --no-root
 ```
 
+### Configuration System
+
+The application uses a **three-tier configuration precedence system**:
+
+1. 🔵 **Defaults** - Built-in codebase defaults (lowest priority)
+2. 🟢 **Environment Variables** - Values from `.env` file (medium priority)
+3. 🟡 **UI Settings** - Custom values set in the app's Settings page (highest priority)
+
+This allows you to configure the application at different levels based on your needs.
+
 ### Configure Speaker Diarization
    
    To enable speaker identification, set up pyannote.audio:
@@ -90,21 +102,67 @@ poetry install --no-root
      ```
    - The app uses GPT-4 by default for cost-effective summarization
 
-### Running the Application
+### Configure API Endpoints (Optional)
 
-1. **Start the Streamlit UI**
+You can customize the API endpoints at three levels:
+
+**1. Default (No Configuration Needed)**
+   - Server API: `http://localhost:5001`
+   - LLM API: `https://api.openai.com/v1`
+
+**2. Environment Variables (`.env` file)**
    ```bash
-   poetry run streamlit run src/ui/app.py
+   # Server API endpoint
+   API_BASE_URL=http://your-custom-server:5001
+   
+   # LLM configuration for summarization
+   LLM_API_BASE_URL=https://your-llm-endpoint/v1
+   LLM_MODEL=gpt-4
+   OPENAI_API_KEY=your_api_key_here
    ```
 
-2. **User Mode (Default)**
+**3. UI Settings (Highest Priority)**
+   - Navigate to the ⚙️ Settings page in the app
+   - Override any configuration value with custom settings
+   - Leave fields empty to fall back to environment or default values
+   - The UI shows which source each value comes from (Default/Environment/UI Override)
+
+This flexibility allows you to:
+- Use on-premises LLM endpoints (e.g., vLLM, Ollama)
+- Switch between development and production servers
+- Test different configurations without modifying code or `.env` files
+
+### Running the Application
+
+The application uses a **client-server architecture**:
+- **Server**: Flask API that handles audio processing (transcription, diarization, summarization)
+- **Client**: Streamlit UI for user interaction
+
+**Start Both Components:**
+
+1. **Start the Flask API Server**
+   ```bash
+   poetry run python src/server/app.py
+   ```
+   Server runs on `http://localhost:5001` by default
+
+2. **Start the Streamlit UI** (in a separate terminal)
+   ```bash
+   poetry run streamlit run src/ui/app_new.py
+   ```
+
+The UI will automatically connect to the API server. You can customize the API endpoint in Settings if needed.
+
+**Using the Application:**
+
+1. **User Mode (Default)**
    - Automatically detects default microphone and all loopback devices
    - Click "Start Recording" to begin unlimited recording
    - Click "Stop Recording" when finished
    - Transcription and summarization start automatically after recording stops
    - View timestamped transcripts with speaker labels and meeting summaries
 
-3. **Dev Mode**
+2. **Dev Mode**
    - Enable "Dev Mode" in the sidebar
    - Manually select specific microphone and loopback devices
    - Set fixed recording duration
@@ -249,6 +307,8 @@ poetry run ruff format .
 - Add progress bars for transcription and summarization steps
 
 ### Post-Processing with LLM
+- ✅ **Implemented**: Flexible endpoint selection (OpenAI API or custom endpoints via Settings)
+- ✅ **Implemented**: Three-tier configuration system for easy endpoint switching
 - Implement structured prompt templates for meeting minutes with customizable sections:
   - Meeting metadata (date, attendees, duration)
   - Executive summary
@@ -263,7 +323,6 @@ poetry run ruff format .
   - Correct grammar and sentence structure
   - Remove filler words ("um", "uh", etc.)
   - Maintain context while improving readability
-- Allow flexible endpoint selection (OpenAI API or on-prem VLLM)
 
 ### Packaging and Deployment
 - Package the entire application and dependencies in a portable ZIP  

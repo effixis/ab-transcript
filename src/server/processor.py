@@ -207,19 +207,28 @@ class AudioProcessor:
             self.job_manager.update_stage(job_id, JobStage.COMPLETE)
             return
 
-        # Check for OpenAI API key
-        openai_key = os.getenv("OPENAI_API_KEY")
+        # Check for OpenAI API key - prioritize options, then environment
+        openai_key = options.get("llm_api_key") or os.getenv("OPENAI_API_KEY")
         if not openai_key:
             logger.warning(f"No OpenAI API key found, skipping summarization for job {job_id}")
             self.job_manager.update_progress(job_id, 100.0, "Summarization skipped (no API key)")
             self.job_manager.update_stage(job_id, JobStage.COMPLETE)
             return
 
-        # Initialize summarizer if needed
-        if self.summarizer is None:
-            summary_model = options.get("summary_model", "gpt-4o-mini")
-            self.summarizer = MeetingSummarizer(api_key=openai_key, model=summary_model)
-            logger.info(f"Initialized summarizer with model: {summary_model}")
+        # Get LLM configuration from options (with fallbacks to defaults)
+        llm_model = options.get("llm_model") or options.get("summary_model") or "gpt-4o-mini"
+        llm_base_url = options.get("llm_api_base_url")  # Optional custom endpoint
+
+        # Initialize summarizer if needed or if settings changed
+        summarizer_key = f"{llm_model}_{llm_base_url or 'default'}"
+        if self.summarizer is None or getattr(self, "_summarizer_key", None) != summarizer_key:
+            if llm_base_url:
+                logger.info(f"Initializing summarizer with custom endpoint: {llm_base_url}, model: {llm_model}")
+                self.summarizer = MeetingSummarizer(api_key=openai_key, model=llm_model, base_url=llm_base_url)
+            else:
+                logger.info(f"Initializing summarizer with model: {llm_model}")
+                self.summarizer = MeetingSummarizer(api_key=openai_key, model=llm_model)
+            self._summarizer_key = summarizer_key
 
         self.job_manager.update_progress(job_id, 90.0, "Generating summary...")
 
