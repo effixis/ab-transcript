@@ -34,15 +34,49 @@ class AudioTranscriber:
         Initialize transcriber with a Whisper model.
 
         Args:
-            model_name: Whisper model size (tiny, base, small, medium, large)
+            model_name: Whisper model identifier. Can be:
+                - OpenAI model size: tiny, base, small, medium, large
+                - HuggingFace model ID: e.g., "openai/whisper-large-v3"
+                - Local model path: e.g., "/path/to/model"
         """
         self.model_name = model_name
         self.model = None
 
     def load_model(self):
-        """Load the Whisper model."""
+        """
+        Load the Whisper model.
+
+        Supports multiple model sources:
+        - OpenAI models (tiny, base, small, medium, large)
+        - HuggingFace models (model IDs like "openai/whisper-large-v3")
+        - Local models (file paths)
+        """
         if self.model is None:
-            self.model = whisper.load_model(self.model_name)
+            try:
+                # Check if it's a HuggingFace model ID or local path
+                if "/" in self.model_name or os.path.exists(self.model_name):
+                    # Use transformers library for HuggingFace models
+                    try:
+                        from transformers import pipeline
+
+                        print(f"Loading Whisper model from HuggingFace: {self.model_name}")
+                        self.model = pipeline("automatic-speech-recognition", model=self.model_name)
+                        self._is_hf_model = True
+                    except ImportError:
+                        print("⚠ transformers library not installed. Install with: pip install transformers")
+                        print(f"Falling back to OpenAI Whisper for: {self.model_name}")
+                        self.model = whisper.load_model("base")
+                        self._is_hf_model = False
+                else:
+                    # Standard OpenAI Whisper model
+                    print(f"Loading OpenAI Whisper model: {self.model_name}")
+                    self.model = whisper.load_model(self.model_name)
+                    self._is_hf_model = False
+            except Exception as e:
+                print(f"⚠ Failed to load model {self.model_name}: {e}")
+                print("Falling back to base model")
+                self.model = whisper.load_model("base")
+                self._is_hf_model = False
 
     def transcribe(self, audio_input, language: str | None = None, **kwargs) -> Dict:
         """
@@ -67,7 +101,11 @@ class AudioTranscriber:
         """
         self.load_model()
 
-        # Handle different input types
+        # Handle HuggingFace models differently
+        if getattr(self, "_is_hf_model", False):
+            return self._transcribe_hf(audio_input, language, **kwargs)
+
+        # Handle different input types for OpenAI Whisper
         if isinstance(audio_input, str):
             # Pass file path directly to Whisper - it handles all preprocessing
             result = self.model.transcribe(audio_input, language=language, **kwargs)
@@ -81,6 +119,41 @@ class AudioTranscriber:
             result = self.model.transcribe(audio, language=language, **kwargs)
         else:
             raise ValueError(f"Unsupported audio input type: {type(audio_input)}")
+
+        return result
+
+    def _transcribe_hf(self, audio_input, language: str | None = None, **kwargs) -> Dict:
+        """
+        Transcribe using HuggingFace transformers pipeline.
+
+        Converts HuggingFace output format to match OpenAI Whisper format.
+        """
+        # HuggingFace pipeline expects file path or numpy array
+        if isinstance(audio_input, str):
+            hf_result = self.model(audio_input, return_timestamps=True)
+        elif isinstance(audio_input, np.ndarray):
+            audio = audio_input.astype(np.float32)
+            hf_result = self.model(audio, return_timestamps=True)
+        elif isinstance(audio_input, bytes):
+            audio = np.frombuffer(audio_input, dtype=np.int16).astype(np.float32) / 32768.0
+            hf_result = self.model(audio, return_timestamps=True)
+        else:
+            raise ValueError(f"Unsupported audio input type: {type(audio_input)}")
+
+        # Convert HuggingFace format to OpenAI Whisper format
+        result = {"text": hf_result.get("text", ""), "language": language or "unknown", "segments": []}
+
+        # Convert chunks to segments if available
+        if "chunks" in hf_result:
+            for chunk in hf_result["chunks"]:
+                result["segments"].append(
+                    {
+                        "start": chunk["timestamp"][0] if chunk["timestamp"][0] is not None else 0.0,
+                        "end": chunk["timestamp"][1] if chunk["timestamp"][1] is not None else 0.0,
+                        "text": chunk["text"],
+                        "no_speech_prob": 0.0,  # HuggingFace doesn't provide this
+                    }
+                )
 
         return result
 

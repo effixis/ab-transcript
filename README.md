@@ -38,12 +38,13 @@ A meeting capture solution that records both system audio (from Teams, Zoom, You
 
 - **Client-Server Architecture**: Separate Flask API server for processing and Streamlit UI for interaction
 - **Three-Tier Configuration**: Flexible endpoint configuration (Defaults → Environment → UI Settings)
+- **Configurable Models**: Support for OpenAI Whisper, HuggingFace models, and local models for both transcription and diarization
 - **System Audio Recording**: Capture audio from Teams, Zoom, Youtube, or any system audio playing on your device using WASAPI loopback
 - **Microphone Recording**: Simultaneous microphone and system audio capture
-- **Transcription**: Transcription from speech to text using OpenAI Whisper
-- **Speaker Diarization**: Identify different speakers using pyannote.audio to view meeting transcription with timestamps and speaker labels
-- **Meeting Summarization**: Automatic generation of meeting minutes using OpenAI GPT-4
-- **Whisper Model**: The Whisper AI model used is the base one (all model config: tiny, base, small, medium, or large)
+- **Transcription**: Transcription from speech to text using OpenAI Whisper or custom models
+- **Speaker Diarization**: Identify different speakers using pyannote.audio (configurable models)
+- **Meeting Summarization**: Automatic generation of meeting minutes using OpenAI GPT-4 or custom LLM endpoints
+- **Multiple Whisper Models**: Support for tiny, base, small, medium, large, plus HuggingFace and local models
 - **Export Transcripts**: Save transcriptions as JSON files with metadata and summaries as text files
 - **Simple UI**: Built with Streamlit UI for easy use
 
@@ -80,57 +81,144 @@ The application uses a **three-tier configuration precedence system**:
 
 This allows you to configure the application at different levels based on your needs.
 
-### Configure Speaker Diarization
-   
-   To enable speaker identification, set up pyannote.audio:
+### Essential Configuration
+
+**Quick Start:**
+Copy the example configuration file and add your API keys:
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and add your keys (see `.env.example` for all available options).
+
+**Minimal Required Configuration:**
+
+**1. HuggingFace Token (Required for Speaker Diarization)**
    - Accept user conditions for pyannote models:
      - https://huggingface.co/pyannote/segmentation-3.0
      - https://huggingface.co/pyannote/speaker-diarization-3.1
-   - Create a Hugging Face access token (READ only) at https://hf.co/settings/tokens
-   - Add to your `.env` file:
-     ```
-     HUGGINGFACE_TOKEN=your_token_here
+   - Create a Hugging Face access token (READ permissions) at https://hf.co/settings/tokens
+   - Add to `.env`:
+     ```bash
+     HUGGINGFACE_TOKEN=hf_abcdefghijklmnopqrstuvwxyz1234567890
      ```
 
-### Configure Meeting Summarization
-
-   To enable automatic meeting minutes generation:
+**2. OpenAI API Key (Required for Meeting Summarization)**
    - Create an OpenAI API key at https://platform.openai.com/api-keys
-   - Add to your `.env` file:
+   - Add to `.env`:
+     ```bash
+     OPENAI_API_KEY=sk-proj-abcdefghijklmnopqrstuvwxyz1234567890
      ```
-     OPENAI_API_KEY=your_api_key_here
-     ```
-   - The app uses GPT-4 by default for cost-effective summarization
 
-### Configure API Endpoints (Optional)
+### Advanced Configuration (Optional)
 
-You can customize the API endpoints at three levels:
+All settings can be configured via `.env` file or UI Settings page.
 
-**1. Default (No Configuration Needed)**
-   - Server API: `http://localhost:5001`
-   - LLM API: `https://api.openai.com/v1`
+**Complete `.env` Example:**
 
-**2. Environment Variables (`.env` file)**
-   ```bash
-   # Server API endpoint
-   API_BASE_URL=http://your-custom-server:5001
-   
-   # LLM configuration for summarization
-   LLM_API_BASE_URL=https://your-llm-endpoint/v1
-   LLM_MODEL=gpt-4
-   OPENAI_API_KEY=your_api_key_here
-   ```
+```bash
+# ============================================================================
+# API ENDPOINTS
+# ============================================================================
 
-**3. UI Settings (Highest Priority)**
-   - Navigate to the ⚙️ Settings page in the app
-   - Override any configuration value with custom settings
-   - Leave fields empty to fall back to environment or default values
-   - The UI shows which source each value comes from (Default/Environment/UI Override)
+# Server API endpoint (where the Flask backend runs)
+API_BASE_URL=http://localhost:5001
 
-This flexibility allows you to:
-- Use on-premises LLM endpoints (e.g., vLLM, Ollama)
-- Switch between development and production servers
-- Test different configurations without modifying code or `.env` files
+# LLM API endpoint for summarization
+# - Use default OpenAI: https://api.openai.com/v1
+# - Or custom endpoint: http://your-server:8000/v1 (vLLM, Ollama, etc.)
+LLM_API_BASE_URL=https://api.openai.com/v1
+
+# ============================================================================
+# API KEYS & TOKENS
+# ============================================================================
+
+# OpenAI API key (get from: https://platform.openai.com/api-keys)
+OPENAI_API_KEY=sk-proj-your_openai_api_key_here
+
+# HuggingFace token (get from: https://hf.co/settings/tokens)
+# Required for diarization and HuggingFace models
+HUGGINGFACE_TOKEN=hf_your_huggingface_token_here
+
+# ============================================================================
+# LLM MODEL CONFIGURATION
+# ============================================================================
+
+# Model to use for meeting summarization
+# Examples:
+#   - gpt-4o (recommended)
+#   - gpt-4-turbo
+#   - gpt-3.5-turbo
+#   - claude-3-opus-20240229 (if using Anthropic API)
+#   - llama-3-70b-instruct (if using vLLM/Ollama)
+LLM_MODEL=gpt-4o
+
+# ============================================================================
+# WHISPER MODEL CONFIGURATION
+# ============================================================================
+
+# Whisper model for speech-to-text transcription
+# 
+# OpenAI Whisper models (built-in, no prefix needed):
+#   - tiny    (fastest, least accurate, ~39MB)
+#   - base    (default, good balance, ~74MB)
+#   - small   (better quality, ~244MB)
+#   - medium  (high quality, ~769MB)
+#   - large   (best quality, ~1550MB)
+#
+# HuggingFace models (requires transformers library):
+#   - openai/whisper-tiny
+#   - openai/whisper-base
+#   - openai/whisper-small
+#   - openai/whisper-medium
+#   - openai/whisper-large-v3
+#   - openai/whisper-large-v3-turbo
+#
+# Local model (absolute path):
+#   - /Users/username/models/whisper-large
+#   - /home/user/ml-models/custom-whisper
+#
+WHISPER_MODEL=base
+
+# ============================================================================
+# DIARIZATION MODEL CONFIGURATION
+# ============================================================================
+
+# PyAnnote model for speaker diarization (who spoke when)
+# Requires HUGGINGFACE_TOKEN to be set
+#
+# HuggingFace PyAnnote models:
+#   - pyannote/speaker-diarization-3.1 (default, recommended)
+#   - pyannote/speaker-diarization-2.1 (older version)
+#
+# Local model (absolute path to downloaded PyAnnote model):
+#   - /Users/username/models/pyannote-diarization
+#   - /home/user/ml-models/speaker-diarization-custom
+#
+DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
+```
+
+### Configuration Notes
+
+**Loading Local Models:**
+- **Whisper**: Path to a directory containing Whisper model files
+- **Diarization**: Path to a directory containing PyAnnote pipeline configuration
+- Use absolute paths (e.g., `/Users/yourname/models/...` on macOS/Linux, `C:\Users\yourname\models\...` on Windows)
+
+**Using HuggingFace Models:**
+- **Whisper**: Install transformers library: `poetry add transformers`
+- **Diarization**: Requires `HUGGINGFACE_TOKEN` for authentication
+- Model format: `organization/model-name` (e.g., `openai/whisper-large-v3`, `pyannote/speaker-diarization-3.1`)
+
+**Custom LLM Endpoints:**
+- Set `LLM_API_BASE_URL` to your server (e.g., `http://localhost:8000/v1` for local vLLM)
+- Set `LLM_MODEL` to match the model name your server expects
+- Works with OpenAI-compatible APIs (vLLM, Ollama, LM Studio, etc.)
+
+**UI Overrides:**
+- All settings can be temporarily overridden in Settings page
+- UI overrides don't modify the `.env` file
+- Leave UI fields empty to use `.env` or default values
 
 ### Running the Application
 
@@ -140,11 +228,26 @@ The application uses a **client-server architecture**:
 
 **Start Both Components:**
 
+**Option 1: Using Shell Scripts (Recommended)**
+
 1. **Start the Flask API Server**
    ```bash
-   poetry run python src/server/app.py
+   ./start_server.sh
    ```
-   Server runs on `http://localhost:5001` by default
+   Server will be available at `http://localhost:5001`
+
+2. **Start the Streamlit UI** (in a separate terminal)
+   ```bash
+   ./start_client.sh
+   ```
+   App will be available at `http://localhost:8501`
+
+**Option 2: Manual Start**
+
+1. **Start the Flask API Server**
+   ```bash
+   poetry run python -m src.server.app
+   ```
 
 2. **Start the Streamlit UI** (in a separate terminal)
    ```bash

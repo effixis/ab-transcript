@@ -26,6 +26,9 @@ class ConfigManager:
         "LLM_MODEL": "gpt-4",
         "OPENAI_API_KEY": "",
         "HUGGINGFACE_TOKEN": "",
+        # Model configurations
+        "WHISPER_MODEL": "base",  # Options: tiny, base, small, medium, large, or HuggingFace model ID
+        "DIARIZATION_MODEL": "pyannote/speaker-diarization-3.1",  # HuggingFace model ID or local path
     }
 
     @staticmethod

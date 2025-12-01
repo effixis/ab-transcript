@@ -28,14 +28,17 @@ class PyannoteDiarizer:
     audio recording libraries.
     """
 
-    def __init__(self, hf_token: str):
+    def __init__(self, hf_token: str, model_name: str = "pyannote/speaker-diarization-3.1"):
         """
-        Initialize diarizer with Hugging Face token.
+        Initialize diarizer with Hugging Face token and model.
 
         Args:
             hf_token: Hugging Face authentication token
+            model_name: HuggingFace model ID or local path for diarization model
+                       Default: "pyannote/speaker-diarization-3.1"
         """
         self.hf_token = hf_token
+        self.model_name = model_name
         self.pipeline = None
         self._pipeline_loaded = False
 
@@ -54,14 +57,14 @@ class PyannoteDiarizer:
             # Import pyannote ONLY when loading pipeline (not at module import time)
             from pyannote.audio import Pipeline
 
-            print("Loading diarization pipeline...")
-            self.pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1", use_auth_token=self.hf_token)
+            print(f"Loading diarization pipeline: {self.model_name}")
+            self.pipeline = Pipeline.from_pretrained(self.model_name, use_auth_token=self.hf_token)
             self._pipeline_loaded = True
-            print("✓ Diarization pipeline loaded")
+            print(f"✓ Diarization pipeline loaded: {self.model_name}")
         except Exception as e:
             self.pipeline = None
             self._pipeline_loaded = False
-            print(f"⚠ Diarization pipeline failed to load: {e}")
+            print(f"⚠ Diarization pipeline failed to load ({self.model_name}): {e}")
 
     def diarize(self, audio_path: str) -> Optional[List[Tuple[float, float, str]]]:
         """

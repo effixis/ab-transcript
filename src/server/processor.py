@@ -133,8 +133,8 @@ class AudioProcessor:
         self.job_manager.update_stage(job_id, JobStage.DIARIZING)
         self.job_manager.update_progress(job_id, 50.0, "Starting diarization...")
 
-        # Check for HuggingFace token
-        hf_token = os.getenv("HUGGINGFACE_TOKEN")
+        # Check for HuggingFace token (prioritize options, fallback to env)
+        hf_token = options.get("huggingface_token") or os.getenv("HUGGINGFACE_TOKEN")
         if not hf_token:
             logger.warning(f"No HuggingFace token found, skipping diarization for job {job_id}")
             self.job_manager.update_progress(job_id, 70.0, "Diarization skipped (no token)")
@@ -142,8 +142,9 @@ class AudioProcessor:
 
         # Initialize diarizer if needed
         if self.diarizer is None:
-            self.diarizer = PyannoteDiarizer(hf_token=hf_token)
-            logger.info("Initialized speaker diarization")
+            diarization_model = options.get("diarization_model", "pyannote/speaker-diarization-3.1")
+            self.diarizer = PyannoteDiarizer(hf_token=hf_token, model_name=diarization_model)
+            logger.info(f"Initialized speaker diarization with model: {diarization_model}")
 
         self.job_manager.update_progress(job_id, 60.0, "Performing speaker diarization...")
 

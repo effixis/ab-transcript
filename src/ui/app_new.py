@@ -66,6 +66,8 @@ def initialize_session_state():
         st.session_state.ui_llm_model = ""  # Empty = not overridden by UI
     if "ui_llm_api_key" not in st.session_state:
         st.session_state.ui_llm_api_key = ""  # Empty = not overridden by UI
+    if "ui_huggingface_token" not in st.session_state:
+        st.session_state.ui_huggingface_token = ""  # Empty = not overridden by UI
 
     # Initialize API client with effective configuration (three-tier precedence)
     if "api_client" not in st.session_state:
@@ -77,9 +79,14 @@ def initialize_session_state():
         st.session_state.jobs_cache = []
     if "jobs_last_refresh" not in st.session_state:
         st.session_state.jobs_last_refresh = None
-    # Recording settings
-    if "whisper_model" not in st.session_state:
-        st.session_state.whisper_model = "base"
+
+    # Model configuration UI overrides (empty string = use env/default)
+    if "ui_whisper_model" not in st.session_state:
+        st.session_state.ui_whisper_model = ""
+    if "ui_diarization_model" not in st.session_state:
+        st.session_state.ui_diarization_model = ""
+
+    # Processing settings
     if "enable_diarization" not in st.session_state:
         st.session_state.enable_diarization = True
     if "enable_summarization" not in st.session_state:
@@ -109,6 +116,16 @@ def get_llm_config() -> dict:
         "model": get_effective_config("LLM_MODEL"),
         "api_key": get_effective_config("OPENAI_API_KEY"),
     }
+
+
+def get_whisper_model() -> str:
+    """Get effective Whisper model name."""
+    return get_effective_config("WHISPER_MODEL")
+
+
+def get_diarization_model() -> str:
+    """Get effective diarization model name."""
+    return get_effective_config("DIARIZATION_MODEL")
 
 
 def check_api_connection() -> bool:
@@ -258,18 +275,31 @@ def recording_page():
     with col2:
         st.subheader("Processing Settings")
 
-        # Processing options
-        st.session_state.whisper_model = st.selectbox(
+        # Get current effective model values
+        current_whisper = get_whisper_model()
+        current_diarization = get_diarization_model()
+
+        # Processing options - these modify UI overrides
+        whisper_options = ["tiny", "base", "small", "medium", "large"]
+        try:
+            current_index = whisper_options.index(current_whisper)
+        except ValueError:
+            # Custom model (HuggingFace ID or local path) - show in help text
+            current_index = whisper_options.index("base")  # fallback
+            st.info(f"Custom Whisper model: `{current_whisper}`. Override in Settings to change.")
+
+        st.session_state.ui_whisper_model = st.selectbox(
             "Whisper Model",
-            options=["tiny", "base", "small", "medium", "large"],
-            index=["tiny", "base", "small", "medium", "large"].index(st.session_state.whisper_model),
-            help="Larger models are more accurate but slower",
+            options=whisper_options,
+            index=current_index,
+            help="Larger models are more accurate but slower. Configure custom models in Settings.",
+            key="whisper_model_selector",
         )
 
         st.session_state.enable_diarization = st.checkbox(
             "Speaker Diarization",
             value=st.session_state.enable_diarization,
-            help="Identify different speakers (requires HuggingFace token)",
+            help=f"Identify different speakers using {current_diarization}",
         )
 
         st.session_state.enable_summarization = st.checkbox(
@@ -312,10 +342,16 @@ def recording_page():
 
                         # Prepare processing options
                         options = {
-                            "whisper_model": st.session_state.whisper_model,
+                            "whisper_model": get_whisper_model(),
+                            "diarization_model": get_diarization_model(),
                             "enable_diarization": st.session_state.enable_diarization,
                             "enable_summarization": st.session_state.enable_summarization,
                         }
+
+                        # Add HuggingFace token if available (needed for model downloads)
+                        hf_token = get_effective_config("HUGGINGFACE_TOKEN")
+                        if hf_token:
+                            options["huggingface_token"] = hf_token
 
                         # Add LLM settings if summarization is enabled
                         if st.session_state.enable_summarization:
@@ -689,6 +725,9 @@ def settings_page():
 
     st.info(f"{source_icon} **Currently using:** `{current_api_url}` (from {source_label})")
 
+    # Show environment variable name
+    st.caption("💡 **Environment variable:** `API_BASE_URL` (set in `.env` file)")
+
     api_url_input = st.text_input(
         "Server API Endpoint Override",
         value=st.session_state.ui_api_base_url,
@@ -697,7 +736,7 @@ def settings_page():
     )
 
     if api_url_input != st.session_state.ui_api_base_url:
-        col1, col2 = st.columns([1, 4])
+        col1, col2 = st.columns([2, 1])
         with col1:
             if st.button("✅ Apply", use_container_width=True, type="primary"):
                 st.session_state.ui_api_base_url = api_url_input
@@ -732,6 +771,7 @@ def settings_page():
     source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[llm_url_source]
     source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[llm_url_source]
     st.info(f"{source_icon} **LLM Base URL:** `{current_llm_url or '(using OpenAI default)'}` (from {source_label})")
+    st.caption("💡 **Environment variable:** `LLM_API_BASE_URL`")
 
     llm_base_url = st.text_input(
         "LLM API Base URL Override",
@@ -745,6 +785,7 @@ def settings_page():
     source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[llm_model_source]
     source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[llm_model_source]
     st.info(f"{source_icon} **LLM Model:** `{current_llm_model}` (from {source_label})")
+    st.caption("💡 **Environment variable:** `LLM_MODEL`")
 
     llm_model = st.text_input(
         "LLM Model Override",
@@ -759,6 +800,7 @@ def settings_page():
     source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[api_key_source]
     key_display = "***" + current_api_key[-4:] if current_api_key else "(not set)"
     st.info(f"{source_icon} **API Key:** `{key_display}` (from {source_label})")
+    st.caption("💡 **Environment variable:** `OPENAI_API_KEY`")
 
     llm_api_key = st.text_input(
         "LLM API Key Override",
@@ -776,7 +818,7 @@ def settings_page():
     )
 
     if llm_changed:
-        col1, col2 = st.columns([1, 4])
+        col1, col2 = st.columns([3, 1])
         with col1:
             if st.button("✅ Save LLM Settings", use_container_width=True, type="primary", key="save_llm"):
                 st.session_state.ui_llm_api_base_url = llm_base_url
@@ -790,6 +832,87 @@ def settings_page():
 
     st.markdown("---")
 
+    # Model Settings
+    st.header("🤖 Model Configuration")
+
+    st.markdown("Configure the models used for transcription and speaker diarization.")
+
+    # Whisper Model
+    current_whisper, whisper_source = ConfigManager.get_display_value(
+        "WHISPER_MODEL", st.session_state.ui_whisper_model
+    )
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[whisper_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[whisper_source]
+    st.info(f"{source_icon} **Whisper Model:** `{current_whisper}` (from {source_label})")
+    st.caption("💡 **Environment variable:** `WHISPER_MODEL`")
+
+    whisper_model_input = st.text_input(
+        "Whisper Model Override",
+        value=st.session_state.ui_whisper_model,
+        help="OpenAI model (tiny/base/small/medium/large), HuggingFace ID (openai/whisper-large-v3), or local path. Leave empty for env/default.",
+        placeholder=f"Empty = use {'env' if whisper_source == 'env' else 'default'}: {current_whisper}",
+    )
+
+    # Diarization Model
+    current_diarization, diarization_source = ConfigManager.get_display_value(
+        "DIARIZATION_MODEL", st.session_state.ui_diarization_model
+    )
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[diarization_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[diarization_source]
+    st.info(f"{source_icon} **Diarization Model:** `{current_diarization}` (from {source_label})")
+    st.caption("💡 **Environment variable:** `DIARIZATION_MODEL`")
+
+    diarization_model_input = st.text_input(
+        "Diarization Model Override",
+        value=st.session_state.ui_diarization_model,
+        help="HuggingFace model ID or local path for PyAnnote diarization. Leave empty for env/default.",
+        placeholder=f"Empty = use {'env' if diarization_source == 'env' else 'default'}: {current_diarization}",
+    )
+
+    # HuggingFace Token
+    st.markdown("---")
+    st.subheader("🔑 HuggingFace Token")
+    st.markdown("Required for downloading models from HuggingFace (diarization, custom Whisper models).")
+
+    current_hf_token, hf_token_source = ConfigManager.get_display_value(
+        "HUGGINGFACE_TOKEN", st.session_state.ui_huggingface_token
+    )
+    source_icon = {"default": "🔵", "env": "🟢", "ui": "🟡"}[hf_token_source]
+    source_label = {"default": "Default", "env": "Environment (.env)", "ui": "UI Override"}[hf_token_source]
+    token_display = "***" + current_hf_token[-4:] if current_hf_token else "(not set)"
+    st.info(f"{source_icon} **HuggingFace Token:** `{token_display}` (from {source_label})")
+    st.caption("💡 **Environment variable:** `HUGGINGFACE_TOKEN`")
+
+    hf_token_input = st.text_input(
+        "HuggingFace Token Override",
+        value=st.session_state.ui_huggingface_token,
+        type="password",
+        help="HuggingFace API token for accessing gated models. Leave empty to use environment/default.",
+        placeholder="Empty = use environment variable",
+    )
+
+    # Check if any model settings changed
+    models_changed = (
+        whisper_model_input != st.session_state.ui_whisper_model
+        or diarization_model_input != st.session_state.ui_diarization_model
+        or hf_token_input != st.session_state.ui_huggingface_token
+    )
+
+    if models_changed:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            if st.button("✅ Save Model Settings", use_container_width=True, type="primary", key="save_models"):
+                st.session_state.ui_whisper_model = whisper_model_input
+                st.session_state.ui_diarization_model = diarization_model_input
+                st.session_state.ui_huggingface_token = hf_token_input
+                st.success("✅ Model settings saved! These will be used for new processing jobs.")
+                st.rerun()
+        with col2:
+            if st.button("↩️ Cancel", use_container_width=True, key="reset_models"):
+                st.rerun()
+
+    st.markdown("---")
+
     # Show all effective configuration
     st.header("📊 Current Effective Configuration")
 
@@ -797,8 +920,13 @@ def settings_page():
         "API Server URL": get_effective_config("API_BASE_URL"),
         "LLM Base URL": get_effective_config("LLM_API_BASE_URL") or "(OpenAI default)",
         "LLM Model": get_effective_config("LLM_MODEL"),
-        "API Key": "***" + get_effective_config("OPENAI_API_KEY")[-4:]
+        "Whisper Model": get_effective_config("WHISPER_MODEL"),
+        "Diarization Model": get_effective_config("DIARIZATION_MODEL"),
+        "OpenAI API Key": "***" + get_effective_config("OPENAI_API_KEY")[-4:]
         if get_effective_config("OPENAI_API_KEY")
+        else "(not set)",
+        "HuggingFace Token": "***" + get_effective_config("HUGGINGFACE_TOKEN")[-4:]
+        if get_effective_config("HUGGINGFACE_TOKEN")
         else "(not set)",
     }
 

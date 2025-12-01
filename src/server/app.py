@@ -275,4 +275,4 @@ if __name__ == "__main__":
     try:
         app.run(debug=True, host="0.0.0.0", port=5001)
     finally:
-        processing_queue.shutdown()
+        processing_queue.stop()
