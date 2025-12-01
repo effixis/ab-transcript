@@ -187,13 +187,19 @@ WHISPER_MODEL=base
 # PyAnnote model for speaker diarization (who spoke when)
 # Requires HUGGINGFACE_TOKEN to be set
 #
-# HuggingFace PyAnnote models:
-#   - pyannote/speaker-diarization-3.1 (default, recommended)
+# IMPORTANT: The diarization pipeline uses multiple models internally:
+#   - Main pipeline: pyannote/speaker-diarization-3.1
+#   - Segmentation: pyannote/segmentation-3.0 (auto-downloaded)
+#   - Embedding: pyannote/wespeaker-voxceleb-resnet34-LM (auto-downloaded)
+#
+# You only configure the main pipeline - dependencies are handled automatically.
+#
+# HuggingFace PyAnnote models (recommended):
+#   - pyannote/speaker-diarization-3.1 (default, uses cache)
 #   - pyannote/speaker-diarization-2.1 (older version)
 #
-# Local model (absolute path to downloaded PyAnnote model):
-#   - /Users/username/models/pyannote-diarization
-#   - /home/user/ml-models/speaker-diarization-custom
+# For offline use, models are cached in ~/.cache/huggingface/
+# Download while online: huggingface-cli download pyannote/speaker-diarization-3.1
 #
 DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
 ```
@@ -202,13 +208,47 @@ DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
 
 **Loading Local Models:**
 - **Whisper**: Path to a directory containing Whisper model files
-- **Diarization**: Path to a directory containing PyAnnote pipeline configuration
+- **Diarization**: See "Offline Model Setup" below
 - Use absolute paths (e.g., `/Users/yourname/models/...` on macOS/Linux, `C:\Users\yourname\models\...` on Windows)
 
 **Using HuggingFace Models:**
 - **Whisper**: Install transformers library: `poetry add transformers`
 - **Diarization**: Requires `HUGGINGFACE_TOKEN` for authentication
 - Model format: `organization/model-name` (e.g., `openai/whisper-large-v3`, `pyannote/speaker-diarization-3.1`)
+- Models are cached automatically in `~/.cache/huggingface/hub/`
+
+**Offline Model Setup (Running Without Internet):**
+
+PyAnnote diarization uses multiple models internally. To run completely offline:
+
+1. **While connected to internet**, accept model conditions on HuggingFace:
+   - https://huggingface.co/pyannote/segmentation-3.0
+   - https://huggingface.co/pyannote/speaker-diarization-3.1
+   - https://huggingface.co/pyannote/wespeaker-voxceleb-resnet34-LM
+
+2. **Download all required models** (they go to `~/.cache/huggingface/`):
+   ```bash
+   # Install HuggingFace CLI
+   pip install huggingface-hub
+   
+   # Login with your token
+   huggingface-cli login
+   
+   # Download main pipeline (downloads dependencies automatically)
+   huggingface-cli download pyannote/speaker-diarization-3.1
+   huggingface-cli download pyannote/segmentation-3.0
+   huggingface-cli download pyannote/wespeaker-voxceleb-resnet34-LM
+   ```
+
+3. **Keep using HuggingFace model names** (they work offline from cache):
+   ```bash
+   # In .env - no path needed, uses cache automatically
+   DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
+   ```
+
+4. **For deployment**, copy the entire `~/.cache/huggingface/` folder to your offline machine
+
+**Note:** You only configure one model (`DIARIZATION_MODEL`), but the pipeline automatically loads its dependencies from cache.
 
 **Custom LLM Endpoints:**
 - Set `LLM_API_BASE_URL` to your server (e.g., `http://localhost:8000/v1` for local vLLM)
