@@ -43,6 +43,7 @@ def __getattr__(name):
     """Lazy import for AudioCapture to avoid pyaudio dependency in server."""
     if name == "AudioCapture":
         from .capture import AudioCapture
+
         return AudioCapture
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
