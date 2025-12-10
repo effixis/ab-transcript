@@ -24,7 +24,7 @@ Example usage:
     result = transcriber.transcribe_multiple(audio_files, device_names)
 """
 
-from .capture import AudioCapture
+# Import server-side components (no pyaudio dependency)
 from .diarization import PyannoteDiarizer, assign_speakers_to_segments
 from .summarizer import MeetingSummarizer, summarize_transcript
 from .transcription import AudioTranscriber
@@ -37,6 +37,15 @@ from .utils import (
     normalize_audio,
     save_audio_array,
 )
+
+
+def __getattr__(name):
+    """Lazy import for AudioCapture to avoid pyaudio dependency in server."""
+    if name == "AudioCapture":
+        from .capture import AudioCapture
+        return AudioCapture
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     "AudioCapture",
