@@ -268,7 +268,27 @@ The application uses a **client-server architecture**:
 
 **Start Both Components:**
 
-**Option 1: Using Shell Scripts (Recommended)**
+**Option 1: Using Docker (Easiest)**
+
+1. **Create `.env` file** with your API keys:
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your OPENAI_API_KEY and HUGGINGFACE_TOKEN
+   ```
+
+2. **Start the server with Docker Compose**:
+   ```bash
+   docker-compose up -d
+   ```
+   Server will be available at `http://localhost:5001`
+
+3. **Start the Streamlit UI** (in a separate terminal):
+   ```bash
+   poetry run streamlit run src/ui/app_new.py
+   ```
+   App will be available at `http://localhost:8501`
+
+**Option 2: Using Shell Scripts (Local Development)**
 
 1. **Start the Flask API Server**
    ```bash
@@ -282,7 +302,7 @@ The application uses a **client-server architecture**:
    ```
    App will be available at `http://localhost:8501`
 
-**Option 2: Manual Start**
+**Option 3: Manual Start**
 
 1. **Start the Flask API Server**
    ```bash
@@ -295,6 +315,25 @@ The application uses a **client-server architecture**:
    ```
 
 The UI will automatically connect to the API server. You can customize the API endpoint in Settings if needed.
+
+**Docker Commands:**
+
+```bash
+# Start server in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop server
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up -d --build
+
+# Run with custom .env file
+docker-compose --env-file .env.production up -d
+```
 
 **Using the Application:**
 
