@@ -43,6 +43,7 @@ class AudioProcessor:
 
         # Initialize components (lazy loading)
         self.transcriber: Optional[AudioTranscriber] = None
+        self.transcriber_model_name: Optional[str] = None
         self.diarizer: Optional[PyannoteDiarizer] = None
         self.summarizer: Optional[MeetingSummarizer] = None
 
@@ -91,12 +92,14 @@ class AudioProcessor:
         self.job_manager.update_stage(job_id, JobStage.TRANSCRIBING)
         self.job_manager.update_progress(job_id, 10.0, "Starting transcription...")
 
-        # Initialize transcriber if needed
-        if self.transcriber is None:
-            whisper_model = options.get("whisper_model", "base")
-            self.transcriber = AudioTranscriber(model_name=whisper_model)
+        requested_model = options.get("whisper_model", "base")
+
+        # Initialize or refresh transcriber when model changes
+        if self.transcriber is None or self.transcriber_model_name != requested_model:
+            self.transcriber = AudioTranscriber(model_name=requested_model)
             self.transcriber.load_model()
-            logger.info(f"Loaded Whisper model: {whisper_model}")
+            self.transcriber_model_name = requested_model
+            logger.info(f"Loaded Whisper model: {requested_model}")
 
         self.job_manager.update_progress(job_id, 20.0, "Transcribing audio...")
 
