@@ -242,10 +242,12 @@ def recording_page():
                 st.session_state.recording_thread.start()
                 st.rerun()
         else:
-            # Show recording status
+            # Show recording status with placeholder for live updates
+            time_placeholder = st.empty()
+
             if st.session_state.recording_start_time:
                 elapsed = time.time() - st.session_state.recording_start_time
-                st.metric("Recording Time", f"{int(elapsed)}s")
+                time_placeholder.metric("Recording Time", f"{int(elapsed)}s")
 
             if st.button("⏹️ Stop Recording", type="secondary", use_container_width=True):
                 st.session_state.stop_recording = True
@@ -269,6 +271,10 @@ def recording_page():
         # Show recording status
         if st.session_state.recording:
             st.info("🔴 Recording in progress... Click 'Stop Recording' when finished.")
+            # Schedule refresh to update timer
+            import time as time_module
+            time_module.sleep(0.5)
+            st.rerun()
         elif st.session_state.audio_files and not st.session_state.recording:
             st.success("✅ Recording completed! You can now upload for processing.")
 
