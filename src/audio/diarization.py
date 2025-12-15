@@ -55,7 +55,16 @@ class PyannoteDiarizer:
 
         try:
             # Import pyannote ONLY when loading pipeline (not at module import time)
+            import torch
             from pyannote.audio import Pipeline
+            from pyannote.audio.core.task import Problem, Resolution, Specifications
+
+            # Fix PyTorch 2.6+ weights_only security issue
+            # Allow safe globals needed by PyAnnote models
+            torch.serialization.add_safe_globals([torch.torch_version.TorchVersion])
+            torch.serialization.add_safe_globals([Specifications])
+            torch.serialization.add_safe_globals([Problem])
+            torch.serialization.add_safe_globals([Resolution])
 
             print(f"Loading diarization pipeline: {self.model_name}")
             self.pipeline = Pipeline.from_pretrained(self.model_name, use_auth_token=self.hf_token)
@@ -175,7 +184,7 @@ def assign_speakers_to_segments(
 ) -> List[dict]:
     """
     Assign speaker labels to Whisper transcription segments using timestamp overlap.
-    
+
     Wrapper function for module-level import compatibility.
     See PyannoteDiarizer.assign_speakers_to_segments for details.
     """
