@@ -605,10 +605,10 @@ def transcript_page():
                     col1, col2 = st.columns([1, 4])
                     with col1:
                         st.text(f"{start_time} - {end_time}")
-                        if speaker:
-                            st.caption(speaker_label)
+                        speaker_label = f"[{speaker}]" if speaker else "[Unknown]"
+                        st.caption(speaker_label)
                     with col2:
-                        st.text(text.strip())
+                        st.text(text.strip() if text else "(no text)")
 
                 if i < len(segments) - 1:
                     st.divider()

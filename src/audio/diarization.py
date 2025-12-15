@@ -117,54 +117,66 @@ class PyannoteDiarizer:
             print(f"⚠ Diarization failed for {audio_path}: {e}")
             return None
 
+    @staticmethod
+    def assign_speakers_to_segments(
+        whisper_segments: List[dict], diarization_segments: List[Tuple[float, float, str]]
+    ) -> List[dict]:
+        """
+        Assign speaker labels to Whisper transcription segments using timestamp overlap.
+
+        Matches each transcription segment to a speaker by finding the diarization segment
+        with the most temporal overlap. This combines the text from Whisper with the
+        speaker identification from pyannote.
+
+        Args:
+            whisper_segments: List of Whisper segments with 'start', 'end', 'text' keys
+            diarization_segments: List of (start_time, end_time, speaker_label) tuples
+
+        Returns:
+            List of segments with added 'speaker' field containing the assigned speaker label.
+            If no overlap is found, speaker is set to "UNKNOWN".
+        """
+        if not diarization_segments:
+            return whisper_segments
+
+        result_segments = []
+
+        for segment in whisper_segments:
+            seg_start = segment["start"]
+            seg_end = segment["end"]
+
+            # Find overlapping diarization segments
+            overlaps = []
+            for dia_start, dia_end, speaker in diarization_segments:
+                # Calculate overlap
+                overlap_start = max(seg_start, dia_start)
+                overlap_end = min(seg_end, dia_end)
+                overlap_duration = max(0, overlap_end - overlap_start)
+
+                if overlap_duration > 0:
+                    overlaps.append((overlap_duration, speaker))
+
+            # Assign speaker with most overlap
+            if overlaps:
+                overlaps.sort(reverse=True, key=lambda x: x[0])
+                assigned_speaker = overlaps[0][1]
+            else:
+                assigned_speaker = "UNKNOWN"
+
+            result_segment = segment.copy()
+            result_segment["speaker"] = assigned_speaker
+            result_segments.append(result_segment)
+
+        return result_segments
+
 
 def assign_speakers_to_segments(
     whisper_segments: List[dict], diarization_segments: List[Tuple[float, float, str]]
 ) -> List[dict]:
     """
     Assign speaker labels to Whisper transcription segments using timestamp overlap.
-
-    Matches each transcription segment to a speaker by finding the diarization segment
-    with the most temporal overlap. This combines the text from Whisper with the
-    speaker identification from pyannote.
-
-    Args:
-        whisper_segments: List of Whisper segments with 'start', 'end', 'text' keys
-        diarization_segments: List of (start_time, end_time, speaker_label) tuples
-
-    Returns:
-        List of segments with added 'speaker' field containing the assigned speaker label.
-        If no overlap is found, speaker is set to "UNKNOWN".
+    
+    Wrapper function for module-level import compatibility.
+    See PyannoteDiarizer.assign_speakers_to_segments for details.
     """
-    if not diarization_segments:
-        return whisper_segments
-
-    result_segments = []
-
-    for segment in whisper_segments:
-        seg_start = segment["start"]
-        seg_end = segment["end"]
-
-        # Find overlapping diarization segments
-        overlaps = []
-        for dia_start, dia_end, speaker in diarization_segments:
-            # Calculate overlap
-            overlap_start = max(seg_start, dia_start)
-            overlap_end = min(seg_end, dia_end)
-            overlap_duration = max(0, overlap_end - overlap_start)
-
-            if overlap_duration > 0:
-                overlaps.append((overlap_duration, speaker))
-
-        # Assign speaker with most overlap
-        if overlaps:
-            overlaps.sort(reverse=True, key=lambda x: x[0])
-            assigned_speaker = overlaps[0][1]
-        else:
-            assigned_speaker = "UNKNOWN"
-
-        result_segment = segment.copy()
-        result_segment["speaker"] = assigned_speaker
-        result_segments.append(result_segment)
-
-    return result_segments
+    return PyannoteDiarizer.assign_speakers_to_segments(whisper_segments, diarization_segments)
