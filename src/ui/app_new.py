@@ -161,25 +161,27 @@ def get_local_recordings() -> list:
     """Get all local recording files with metadata."""
     recordings = []
     output_dir = Path(OUTPUT_DIR)
-    
+
     if not output_dir.exists():
         return recordings
-    
+
     # Find all audio files
-    for ext in ['*.wav', '*.mp3', '*.m4a', '*.flac']:
+    for ext in ["*.wav", "*.mp3", "*.m4a", "*.flac"]:
         for file_path in output_dir.glob(ext):
             if file_path.is_file():
                 stat = file_path.stat()
-                recordings.append({
-                    'path': str(file_path),
-                    'name': file_path.name,
-                    'size': stat.st_size,
-                    'size_mb': stat.st_size / (1024 * 1024),
-                    'modified': datetime.fromtimestamp(stat.st_mtime),
-                })
-    
+                recordings.append(
+                    {
+                        "path": str(file_path),
+                        "name": file_path.name,
+                        "size": stat.st_size,
+                        "size_mb": stat.st_size / (1024 * 1024),
+                        "modified": datetime.fromtimestamp(stat.st_mtime),
+                    }
+                )
+
     # Sort by modification time (newest first)
-    recordings.sort(key=lambda x: x['modified'], reverse=True)
+    recordings.sort(key=lambda x: x["modified"], reverse=True)
     return recordings
 
 
@@ -189,10 +191,12 @@ def recording_page():
 
     # Check API connection (but don't block recording)
     server_available = check_api_connection()
-    
+
     if not server_available:
-        st.warning("⚠️ API server is offline. You can still record audio locally and upload later when server is available.")
-    
+        st.warning(
+            "⚠️ API server is offline. You can still record audio locally and upload later when server is available."
+        )
+
     # Audio device setup
     capture = AudioCapture(frames_per_buffer=1024)
     devices = capture.list_devices()
@@ -291,6 +295,7 @@ def recording_page():
             st.info("🔴 Recording in progress... Click 'Stop Recording' when finished.")
             # Schedule refresh to update timer
             import time as time_module
+
             time_module.sleep(0.5)
             st.rerun()
         elif st.session_state.audio_files and not st.session_state.recording:
@@ -407,34 +412,42 @@ def recording_page():
                     except Exception as e:
                         st.error(f"❌ Upload failed: {e}")
             else:
-                st.button("🚀 Upload & Process", type="primary", use_container_width=True, disabled=True, help="Server offline - upload not available")
+                st.button(
+                    "🚀 Upload & Process",
+                    type="primary",
+                    use_container_width=True,
+                    disabled=True,
+                    help="Server offline - upload not available",
+                )
 
         with col3:
             if st.button("🗑️ Clear Recording", use_container_width=True):
                 st.session_state.audio_files = []
                 st.rerun()
-    
+
     # Local recordings section
     st.markdown("---")
     st.subheader("📂 Local Recordings")
-    
+
     local_recordings = get_local_recordings()
-    
+
     if not local_recordings:
         st.info("No local recordings found. Record audio above to save files locally.")
     else:
         st.success(f"Found {len(local_recordings)} local recording(s)")
-        
+
         # Display recordings in a table-like format
         for idx, recording in enumerate(local_recordings):
-            with st.expander(f"📁 {recording['name']} ({recording['size_mb']:.1f} MB) - {recording['modified'].strftime('%Y-%m-%d %H:%M')}"):
+            with st.expander(
+                f"📁 {recording['name']} ({recording['size_mb']:.1f} MB) - {recording['modified'].strftime('%Y-%m-%d %H:%M')}"
+            ):
                 col1, col2 = st.columns([3, 1])
-                
+
                 with col1:
                     st.caption(f"**Path:** {recording['path']}")
                     st.caption(f"**Size:** {recording['size_mb']:.2f} MB")
                     st.caption(f"**Modified:** {recording['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
-                
+
                 with col2:
                     if server_available:
                         if st.button("🚀 Upload", key=f"upload_{idx}", use_container_width=True):
@@ -464,18 +477,24 @@ def recording_page():
                                             options["llm_model"] = llm_config["model"]
 
                                     # Upload to server
-                                    result = st.session_state.api_client.upload_audio_file(recording['path'], options)
-                                    
+                                    result = st.session_state.api_client.upload_audio_file(recording["path"], options)
+
                                     job_id = result["job_id"]
                                     st.success(f"✅ Uploaded! Job ID: {job_id}")
                                     time.sleep(2)
                                     st.session_state.current_page = "Jobs"
                                     st.rerun()
-                                    
+
                             except Exception as e:
                                 st.error(f"❌ Upload failed: {e}")
                     else:
-                        st.button("🚀 Upload", key=f"upload_{idx}", use_container_width=True, disabled=True, help="Server offline")
+                        st.button(
+                            "🚀 Upload",
+                            key=f"upload_{idx}",
+                            use_container_width=True,
+                            disabled=True,
+                            help="Server offline",
+                        )
 
 
 def jobs_page():
