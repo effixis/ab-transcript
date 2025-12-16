@@ -139,6 +139,19 @@ if errorlevel 1 (
         pause
         exit /b 1
     )
+    echo PyInstaller installed successfully!
+) else (
+    echo PyInstaller is already installed.
+)
+
+REM Verify PyInstaller can be imported
+echo Verifying PyInstaller installation...
+%PYTHON_CMD% -c "import PyInstaller; print('PyInstaller version:', PyInstaller.__version__)" >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo PyInstaller import failed. Reinstalling...
+    %PYTHON_CMD% -m pip uninstall pyinstaller -y
+    %PYTHON_CMD% -m pip install pyinstaller
 )
 
 REM Clean previous builds
@@ -166,8 +179,46 @@ echo Installing Streamlit (UI framework)...
 echo Installing SoundDevice (audio capture)...
 %PYTHON_CMD% -m pip install sounddevice --quiet
 echo Installing PyAudioWPatch (Windows audio)...
-%PYTHON_CMD% -m pip install pyaudiowpatch --quiet
-echo Installing Requests (HTTP client)...
+%PYTH========================================
+echo Building executable...
+echo ========================================
+echo.
+
+REM Try to run PyInstaller - try multiple methods
+echo Attempting to run PyInstaller...
+
+REM Method 1: Try as module
+%PYTHON_CMD% -m PyInstaller recorder_client.spec >nul 2>&1
+if not errorlevel 1 goto :build_success
+
+REM Method 2: Try with lowercase
+echo Retrying with lowercase pyinstaller...
+%PYTHON_CMD% -m pyinstaller recorder_client.spec >nul 2>&1
+if not errorlevel 1 goto :build_success
+
+REM Method 3: Try calling pyinstaller.exe directly
+echo Retrying with pyinstaller.exe...
+pyinstaller recorder_client.spec >nul 2>&1
+if not errorlevel 1 goto :build_success
+
+REM All methods failed
+echo.
+echo ERROR: Build failed! Could not run PyInstaller.
+echo.
+echo Diagnostic information:
+echo PYTHON_CMD: %PYTHON_CMD%
+echo.
+echo Trying to get PyInstaller info:
+%PYTHON_CMD% -m pip show pyinstaller
+echo.
+echo Please try running this manually:
+echo %PYTHON_CMD% -m PyInstaller recorder_client.spec
+echo.
+pause
+exit /b 1
+
+:build_success
+echo Build process completed!
 %PYTHON_CMD% -m pip install requests --quiet
 echo Installing Python-dotenv (config)...
 %PYTHON_CMD% -m pip install python-dotenv --quiet
