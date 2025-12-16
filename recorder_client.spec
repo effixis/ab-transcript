@@ -11,14 +11,22 @@ the server components (no Flask, no ML models).
 
 import sys
 from pathlib import Path
+from PyInstaller.utils.hooks import copy_metadata
 
 block_cipher = None
 
 # Get the project root directory
 project_root = Path.cwd()
 
+# Copy package metadata (required for Streamlit)
+datas = copy_metadata('streamlit')
+datas += copy_metadata('altair')
+datas += copy_metadata('pillow')
+datas += copy_metadata('numpy')
+datas += copy_metadata('requests')
+
 # Data files to include
-datas = [
+datas += [
     (str(project_root / 'src' / 'audio' / '__init__.py'), 'src/audio'),
     (str(project_root / 'src' / 'audio' / 'capture.py'), 'src/audio'),
     (str(project_root / 'src' / 'audio' / 'utils.py'), 'src/audio'),
@@ -34,21 +42,37 @@ hiddenimports = [
     'streamlit',
     'streamlit.runtime',
     'streamlit.runtime.scriptrunner',
+    'streamlit.runtime.scriptrunner.script_runner',
+    'streamlit.runtime.state',
+    'streamlit.runtime.state.session_state',
     'streamlit.web',
     'streamlit.web.cli',
+    'streamlit.web.server',
+    'streamlit.web.server.server',
+    'streamlit.components.v1',
+    'streamlit.logger',
     'sounddevice',
     'pyaudiowpatch',  # Windows-specific
     'requests',
     'dotenv',
     'numpy',
     'altair',
+    'altair.vegalite.v5',
+    'altair.vegalite.v5.schema',
     'click',
     'tornado',
+    'tornado.web',
+    'tornado.ioloop',
     'watchdog',
     'watchdog.observers',
+    'watchdog.observers.polling',
     'validators',
     'toml',
     'tzlocal',
+    'packaging',
+    'packaging.version',
+    'packaging.specifiers',
+    'packaging.requirements',
 ]
 
 # Analysis
