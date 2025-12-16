@@ -245,13 +245,38 @@ PyAnnote diarization uses multiple models internally. To run completely offline:
    huggingface-cli download pyannote/wespeaker-voxceleb-resnet34-LM
    ```
 
-3. **Keep using HuggingFace model names** (they work offline from cache):
+3. **Enable offline mode** in your `.env` file:
    ```bash
-   # In .env - no path needed, uses cache automatically
+   HF_HUB_OFFLINE=1
+   HF_HUB_CACHE=/path/to/models  # Optional: custom cache location
+   ```
+   This forces HuggingFace libraries to only use cached models (no internet requests).
+
+4. **Specify models** using either approach:
+   
+   **Option A: Use model names** (if cache structure is intact):
+   ```bash
+   WHISPER_MODEL=openai/whisper-large-v3
    DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
    ```
+   
+   **Option B: Use full snapshot paths** (for isolated/custom cache):
+   ```bash
+   # Find snapshot hash first
+   ls ~/.cache/huggingface/hub/models--openai--whisper-large-v3/snapshots/
+   # Output example: abc123def456
+   
+   # Use full path including hash
+   WHISPER_MODEL=/path/to/cache/models--openai--whisper-large-v3/snapshots/abc123def456/
+   DIARIZATION_MODEL=/path/to/cache/models--pyannote--speaker-diarization-3.1/snapshots/xyz789/
+   ```
+   
+   **Cache structure:** `HF_HUB_CACHE/models--org--model/snapshots/HASH/config.json`
 
-4. **For deployment**, copy the entire `~/.cache/huggingface/` folder to your offline machine
+5. **For deployment**, copy the entire `~/.cache/huggingface/` folder to your offline machine:
+   ```bash
+   scp -r ~/.cache/huggingface/ user@offline-server:/path/to/models/
+   ```
 
 **Note:** You only configure one model (`DIARIZATION_MODEL`), but the pipeline automatically loads its dependencies from cache.
 

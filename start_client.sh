@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Load environment variables from .env file
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Start the Streamlit client app
 echo "🎙️ Starting Streamlit Client App..."
 echo "App will be available at http://localhost:8501"

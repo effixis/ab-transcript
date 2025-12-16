@@ -21,6 +21,14 @@ services:
       - LLM_MODEL=${LLM_MODEL:-gpt-4o}
       - WHISPER_MODEL=${WHISPER_MODEL:-base}
       - DIARIZATION_MODEL=${DIARIZATION_MODEL:-pyannote/speaker-diarization-3.1}
+      
+      # Offline Mode (optional - set to 1 to disable internet access for models)
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+      - HF_HUB_CACHE=${HF_HUB_CACHE:-/root/.cache/huggingface}
+      - XDG_CACHE_HOME=${XDG_CACHE_HOME:-/root/.cache}
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
     
     volumes:
       # Persist output files
@@ -30,6 +38,12 @@ services:
       
       # Cache HuggingFace models (for offline use)
       - ~/.cache/huggingface:/root/.cache/huggingface
+      
+      # Cache OpenAI Whisper models (for offline use)
+      - ~/.cache/whisper:/root/.cache/whisper
+      
+      # Optional: Use custom model cache location
+      # - ./models:/app/models
     
     restart: unless-stopped
     

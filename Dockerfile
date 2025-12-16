@@ -38,7 +38,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     'ffmpeg-python>=0.2.0,<0.3.0' \
     'requests>=2.32.0,<3.0.0' \
     'watchdog>=4.0.0,<5.0.0' \
-    'huggingface-hub>=0.16.0,<0.23.0' \
+    'huggingface-hub>=0.16.0,<1.0.0' \
+    'transformers>=4.30.0,<5.0.0' \
     'numpy>=1.24.0,<2.0.0'
 
 # ============================================================================

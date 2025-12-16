@@ -23,3 +23,4 @@ __pycache__/
 secrets.json
 
 server_jobs/
+models/
