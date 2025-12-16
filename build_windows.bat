@@ -41,14 +41,9 @@ if not errorlevel 1 (
 )
 
 REM Method 4: Check common installation paths
-if exist "C:\Python310\python.exe" (
-    set PYTHON_CMD=C:\Python310\python.exe
-    echo Found Python at: C:\Python310\python.exe
-    goto :python_found
-)
-if exist "C:\Python311\python.exe" (
-    set PYTHON_CMD=C:\Python311\python.exe
-    echo Found Python at: C:\Python311\python.exe
+if exist "C:\Python313\python.exe" (
+    set PYTHON_CMD=C:\Python313\python.exe
+    echo Found Python at: C:\Python313\python.exe
     goto :python_found
 )
 if exist "C:\Python312\python.exe" (
@@ -56,9 +51,24 @@ if exist "C:\Python312\python.exe" (
     echo Found Python at: C:\Python312\python.exe
     goto :python_found
 )
-if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
-    echo Found Python at: %LOCALAPPDATA%\Programs\Python\Python310\python.exe
+if exist "C:\Python311\python.exe" (
+    set PYTHON_CMD=C:\Python311\python.exe
+    echo Found Python at: C:\Python311\python.exe
+    goto :python_found
+)
+if exist "C:\Python310\python.exe" (
+    set PYTHON_CMD=C:\Python310\python.exe
+    echo Found Python at: C:\Python310\python.exe
+    goto :python_found
+)
+if exist "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" (
+    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python313\python.exe
+    echo Found Python at: %LOCALAPPDATA%\Programs\Python\Python313\python.exe
+    goto :python_found
+)
+if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe
+    echo Found Python at: %LOCALAPPDATA%\Programs\Python\Python312\python.exe
     goto :python_found
 )
 if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
@@ -66,9 +76,9 @@ if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
     echo Found Python at: %LOCALAPPDATA%\Programs\Python\Python311\python.exe
     goto :python_found
 )
-if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe
-    echo Found Python at: %LOCALAPPDATA%\Programs\Python\Python312\python.exe
+if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
+    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
+    echo Found Python at: %LOCALAPPDATA%\Programs\Python\Python310\python.exe
     goto :python_found
 )
 
