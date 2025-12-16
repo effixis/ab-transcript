@@ -25,6 +25,7 @@ datas = [
     (str(project_root / 'src' / 'client' / '__init__.py'), 'src/client'),
     (str(project_root / 'src' / 'client' / 'api_client.py'), 'src/client'),
     (str(project_root / 'src' / 'config.py'), 'src'),
+    (str(project_root / 'src' / 'ui' / 'app_new.py'), 'src/ui'),
     (str(project_root / '.env.example'), '.'),
 ]
 
@@ -52,7 +53,7 @@ hiddenimports = [
 
 # Analysis
 a = Analysis(
-    ['src/ui/app_new.py'],
+    ['launcher.py'],  # Use launcher script instead of app_new.py directly
     pathex=[str(project_root)],
     binaries=[],
     datas=datas,
