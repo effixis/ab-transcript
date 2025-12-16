@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 # Add the current directory to path
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Running as compiled executable
     application_path = Path(sys.executable).parent
 else:
@@ -23,7 +23,7 @@ sys.path.insert(0, str(application_path))
 # Import streamlit and run the app
 from streamlit.web import cli as stcli
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Configure Streamlit to run in headless mode
     sys.argv = [
         "streamlit",
@@ -34,5 +34,5 @@ if __name__ == '__main__':
         "--server.port=8501",
         "--server.address=localhost",
     ]
-    
+
     sys.exit(stcli.main())
