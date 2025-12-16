@@ -179,46 +179,8 @@ echo Installing Streamlit (UI framework)...
 echo Installing SoundDevice (audio capture)...
 %PYTHON_CMD% -m pip install sounddevice --quiet
 echo Installing PyAudioWPatch (Windows audio)...
-%PYTH========================================
-echo Building executable...
-echo ========================================
-echo.
-
-REM Try to run PyInstaller - try multiple methods
-echo Attempting to run PyInstaller...
-
-REM Method 1: Try as module
-%PYTHON_CMD% -m PyInstaller recorder_client.spec >nul 2>&1
-if not errorlevel 1 goto :build_success
-
-REM Method 2: Try with lowercase
-echo Retrying with lowercase pyinstaller...
-%PYTHON_CMD% -m pyinstaller recorder_client.spec >nul 2>&1
-if not errorlevel 1 goto :build_success
-
-REM Method 3: Try calling pyinstaller.exe directly
-echo Retrying with pyinstaller.exe...
-pyinstaller recorder_client.spec >nul 2>&1
-if not errorlevel 1 goto :build_success
-
-REM All methods failed
-echo.
-echo ERROR: Build failed! Could not run PyInstaller.
-echo.
-echo Diagnostic information:
-echo PYTHON_CMD: %PYTHON_CMD%
-echo.
-echo Trying to get PyInstaller info:
-%PYTHON_CMD% -m pip show pyinstaller
-echo.
-echo Please try running this manually:
-echo %PYTHON_CMD% -m PyInstaller recorder_client.spec
-echo.
-pause
-exit /b 1
-
-:build_success
-echo Build process completed!
+%PYTHON_CMD% -m pip install pyaudiowpatch --quiet
+echo Installing Requests (HTTP client)...
 %PYTHON_CMD% -m pip install requests --quiet
 echo Installing Python-dotenv (config)...
 %PYTHON_CMD% -m pip install python-dotenv --quiet
@@ -230,12 +192,19 @@ echo.
 
 REM Build with PyInstaller
 echo.
+echo ========================================
 echo Building executable...
-%PYTHON_CMD% -m pyinstaller recorder_client.spec
+echo This will take 5-15 minutes - please wait
+echo ========================================
+echo.
+%PYTHON_CMD% -m PyInstaller recorder_client.spec
 
 if errorlevel 1 (
     echo.
     echo ERROR: Build failed!
+    echo.
+    echo Try running manually to see detailed error:
+    echo %PYTHON_CMD% -m PyInstaller recorder_client.spec
     pause
     exit /b 1
 )
