@@ -92,7 +92,7 @@ class AudioProcessor:
         self.job_manager.update_stage(job_id, JobStage.TRANSCRIBING)
         self.job_manager.update_progress(job_id, 10.0, "Starting transcription...")
 
-        requested_model = options.get("whisper_model", "base")
+        requested_model = os.getenv("WHISPER_MODEL", options.get("whisper_model", "base"))
 
         # Initialize or refresh transcriber when model changes
         if self.transcriber is None or self.transcriber_model_name != requested_model:
@@ -117,7 +117,7 @@ class AudioProcessor:
             "segments": segments,
             "language": language,
             "metadata": {
-                "whisper_model": options.get("whisper_model", "base"),
+                "whisper_model": requested_model,
                 "duration": result.get("duration", 0),
                 "processing_stage": "transcription",
             },
