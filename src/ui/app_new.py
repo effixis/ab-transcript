@@ -157,24 +157,42 @@ def get_all_loopback_devices(devices):
     return categorized["loopback"]
 
 
+def get_local_recordings() -> list:
+    """Get all local recording files with metadata."""
+    recordings = []
+    output_dir = Path(OUTPUT_DIR)
+    
+    if not output_dir.exists():
+        return recordings
+    
+    # Find all audio files
+    for ext in ['*.wav', '*.mp3', '*.m4a', '*.flac']:
+        for file_path in output_dir.glob(ext):
+            if file_path.is_file():
+                stat = file_path.stat()
+                recordings.append({
+                    'path': str(file_path),
+                    'name': file_path.name,
+                    'size': stat.st_size,
+                    'size_mb': stat.st_size / (1024 * 1024),
+                    'modified': datetime.fromtimestamp(stat.st_mtime),
+                })
+    
+    # Sort by modification time (newest first)
+    recordings.sort(key=lambda x: x['modified'], reverse=True)
+    return recordings
+
+
 def recording_page():
     """Main recording interface."""
     st.title("🎙️ Audio Recording")
 
-    # Check API connection
-    if not check_api_connection():
-        api_url = get_api_base_url()
-        st.error(f"⚠️ Cannot connect to API server at {api_url}. Make sure the Flask server is running.")
-        st.info(
-            "To start the server:\n"
-            "```bash\n"
-            "./start_server.sh\n"
-            "# or: python3 -m src.server.app\n"
-            "```\n\n"
-            "The server uses Python's built-in Queue system - no external dependencies required!"
-        )
-        return
-
+    # Check API connection (but don't block recording)
+    server_available = check_api_connection()
+    
+    if not server_available:
+        st.warning("⚠️ API server is offline. You can still record audio locally and upload later when server is available.")
+    
     # Audio device setup
     capture = AudioCapture(frames_per_buffer=1024)
     devices = capture.list_devices()
@@ -329,68 +347,135 @@ def recording_page():
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            if st.button("� Show Saved Files", use_container_width=True):
+            if st.button("📁 Show Saved Files", use_container_width=True):
                 st.success(f"✅ {len(valid_files)} audio file(s) already saved")
                 for file in valid_files:
                     st.text(f"📁 {os.path.basename(file)}")
                     st.caption(f"Full path: {file}")
 
         with col2:
-            if st.button("🚀 Upload & Process", type="primary", use_container_width=True):
-                try:
-                    with st.spinner("Uploading audio file..."):
-                        if not valid_files:
-                            st.error("❌ No audio files to upload")
-                            return
+            # Only show upload button if server is available
+            if server_available:
+                if st.button("🚀 Upload & Process", type="primary", use_container_width=True):
+                    try:
+                        with st.spinner("Uploading audio file..."):
+                            if not valid_files:
+                                st.error("❌ No audio files to upload")
+                                return
 
-                        # Use the first file for processing (usually microphone)
-                        main_audio_file = valid_files[0]
+                            # Use the first file for processing (usually microphone)
+                            main_audio_file = valid_files[0]
 
-                        # Prepare processing options
-                        options = {
-                            "whisper_model": get_whisper_model(),
-                            "diarization_model": get_diarization_model(),
-                            "enable_diarization": st.session_state.enable_diarization,
-                            "enable_summarization": st.session_state.enable_summarization,
-                        }
+                            # Prepare processing options
+                            options = {
+                                "whisper_model": get_whisper_model(),
+                                "diarization_model": get_diarization_model(),
+                                "enable_diarization": st.session_state.enable_diarization,
+                                "enable_summarization": st.session_state.enable_summarization,
+                            }
 
-                        # Add HuggingFace token if available (needed for model downloads)
-                        hf_token = get_effective_config("HUGGINGFACE_TOKEN")
-                        if hf_token:
-                            options["huggingface_token"] = hf_token
+                            # Add HuggingFace token if available (needed for model downloads)
+                            hf_token = get_effective_config("HUGGINGFACE_TOKEN")
+                            if hf_token:
+                                options["huggingface_token"] = hf_token
 
-                        # Add LLM settings if summarization is enabled
-                        if st.session_state.enable_summarization:
-                            llm_config = get_llm_config()
-                            if llm_config["base_url"]:
-                                options["llm_api_base_url"] = llm_config["base_url"]
-                            if llm_config["api_key"]:
-                                options["llm_api_key"] = llm_config["api_key"]
-                            if llm_config["model"]:
-                                options["llm_model"] = llm_config["model"]
+                            # Add LLM settings if summarization is enabled
+                            if st.session_state.enable_summarization:
+                                llm_config = get_llm_config()
+                                if llm_config["base_url"]:
+                                    options["llm_api_base_url"] = llm_config["base_url"]
+                                if llm_config["api_key"]:
+                                    options["llm_api_key"] = llm_config["api_key"]
+                                if llm_config["model"]:
+                                    options["llm_model"] = llm_config["model"]
 
-                        # Upload to server
-                        result = st.session_state.api_client.upload_audio_file(main_audio_file, options)
+                            # Upload to server
+                            result = st.session_state.api_client.upload_audio_file(main_audio_file, options)
 
-                        job_id = result["job_id"]
-                        st.success(f"✅ Uploaded! Job ID: {job_id}")
-                        st.info("📋 Check the 'Jobs' page to monitor progress.")
+                            job_id = result["job_id"]
+                            st.success(f"✅ Uploaded! Job ID: {job_id}")
+                            st.info("📋 Check the 'Jobs' page to monitor progress.")
 
-                        # Clear the recording
-                        st.session_state.audio_files = []
+                            # Clear the recording
+                            st.session_state.audio_files = []
 
-                        # Switch to jobs page
-                        time.sleep(2)
-                        st.session_state.current_page = "Jobs"
-                        st.rerun()
+                            # Switch to jobs page
+                            time.sleep(2)
+                            st.session_state.current_page = "Jobs"
+                            st.rerun()
 
-                except Exception as e:
-                    st.error(f"❌ Upload failed: {e}")
+                    except Exception as e:
+                        st.error(f"❌ Upload failed: {e}")
+            else:
+                st.button("🚀 Upload & Process", type="primary", use_container_width=True, disabled=True, help="Server offline - upload not available")
 
         with col3:
             if st.button("🗑️ Clear Recording", use_container_width=True):
                 st.session_state.audio_files = []
                 st.rerun()
+    
+    # Local recordings section
+    st.markdown("---")
+    st.subheader("📂 Local Recordings")
+    
+    local_recordings = get_local_recordings()
+    
+    if not local_recordings:
+        st.info("No local recordings found. Record audio above to save files locally.")
+    else:
+        st.success(f"Found {len(local_recordings)} local recording(s)")
+        
+        # Display recordings in a table-like format
+        for idx, recording in enumerate(local_recordings):
+            with st.expander(f"📁 {recording['name']} ({recording['size_mb']:.1f} MB) - {recording['modified'].strftime('%Y-%m-%d %H:%M')}"):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.caption(f"**Path:** {recording['path']}")
+                    st.caption(f"**Size:** {recording['size_mb']:.2f} MB")
+                    st.caption(f"**Modified:** {recording['modified'].strftime('%Y-%m-%d %H:%M:%S')}")
+                
+                with col2:
+                    if server_available:
+                        if st.button("🚀 Upload", key=f"upload_{idx}", use_container_width=True):
+                            try:
+                                with st.spinner("Uploading..."):
+                                    # Prepare processing options
+                                    options = {
+                                        "whisper_model": get_whisper_model(),
+                                        "diarization_model": get_diarization_model(),
+                                        "enable_diarization": st.session_state.enable_diarization,
+                                        "enable_summarization": st.session_state.enable_summarization,
+                                    }
+
+                                    # Add HuggingFace token if available
+                                    hf_token = get_effective_config("HUGGINGFACE_TOKEN")
+                                    if hf_token:
+                                        options["huggingface_token"] = hf_token
+
+                                    # Add LLM settings if summarization is enabled
+                                    if st.session_state.enable_summarization:
+                                        llm_config = get_llm_config()
+                                        if llm_config["base_url"]:
+                                            options["llm_api_base_url"] = llm_config["base_url"]
+                                        if llm_config["api_key"]:
+                                            options["llm_api_key"] = llm_config["api_key"]
+                                        if llm_config["model"]:
+                                            options["llm_model"] = llm_config["model"]
+
+                                    # Upload to server
+                                    result = st.session_state.api_client.upload_audio_file(recording['path'], options)
+                                    
+                                    job_id = result["job_id"]
+                                    st.success(f"✅ Uploaded! Job ID: {job_id}")
+                                    time.sleep(2)
+                                    st.session_state.current_page = "Jobs"
+                                    st.rerun()
+                                    
+                            except Exception as e:
+                                st.error(f"❌ Upload failed: {e}")
+                    else:
+                        st.button("🚀 Upload", key=f"upload_{idx}", use_container_width=True, disabled=True, help="Server offline")
 
 
 def jobs_page():
