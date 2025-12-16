@@ -25,6 +25,7 @@ Central configuration management class that:
 - `OPENAI_API_KEY`: API key for authentication (default: empty)
 - `HUGGINGFACE_TOKEN`: Token for PyAnnote and HuggingFace models (default: empty)
 - `WHISPER_MODEL`: Whisper transcription model (default: `base`)
+  - Three-tier precedence: 1) API request option 2) Environment variable 3) "base" default
   - OpenAI models: `tiny`, `base`, `small`, `medium`, `large`
   - HuggingFace: `openai/whisper-large-v3`, `openai/whisper-large-v3-turbo`, etc.
   - Local: absolute path like `/Users/name/models/whisper-large`
@@ -99,8 +100,9 @@ Central configuration management class that:
   - Accepts configurable model_name parameter
   - Supports HuggingFace and local models
 - `src/server/processor.py` - Updated to use model configuration
-  - Passes whisper_model and diarization_model from options
-  - Uses ConfigManager for model selection
+  - Three-tier precedence for whisper_model: API option > WHISPER_MODEL env > "base" default
+  - Lazy loads and caches transcriber when model changes
+  - Passes diarization_model from options
 - `README.md` - Documented new configuration system, model support, and client-server architecture
 - `.github/IMPLEMENTATION_NOTES.md` - Technical documentation for developers
 

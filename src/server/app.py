@@ -93,6 +93,12 @@ def upload_audio():
     - file: Audio file to process
     - filename: Optional custom filename
     - options: Optional JSON string with processing options
+        - whisper_model: Whisper model to use (optional)
+            Precedence: 1) This option 2) WHISPER_MODEL env var 3) "base" default
+            Examples: "tiny", "base", "small", "medium", "large",
+                     "openai/whisper-large-v3", "/path/to/model"
+        - enable_diarization: Boolean to enable speaker diarization (optional)
+        - enable_summary: Boolean to enable meeting summarization (optional)
 
     Returns:
     - job_id: Unique identifier for tracking the processing job

@@ -159,6 +159,11 @@ LLM_MODEL=gpt-4o
 
 # Whisper model for speech-to-text transcription
 # 
+# Three-tier precedence (highest to lowest):
+#   1. Client request (whisper_model in API options) - per-request override
+#   2. Environment variable (WHISPER_MODEL below) - server default
+#   3. Hardcoded default ("base") - fallback if not specified
+#
 # OpenAI Whisper models (built-in, no prefix needed):
 #   - tiny    (fastest, least accurate, ~39MB)
 #   - base    (default, good balance, ~74MB)

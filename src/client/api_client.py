@@ -56,7 +56,13 @@ class APIClient:
 
         Args:
             file_path: Path to the audio file to upload
-            options: Processing options (whisper model, enable diarization, etc.)
+            options: Processing options dictionary with optional keys:
+                - whisper_model: Whisper model to use (str, optional)
+                    Precedence: 1) This option 2) WHISPER_MODEL env 3) "base" default
+                    Examples: "tiny", "base", "small", "medium", "large",
+                             "openai/whisper-large-v3", "/path/to/model"
+                - enable_diarization: Enable speaker diarization (bool, optional)
+                - enable_summary: Enable meeting summarization (bool, optional)
             timeout: Request timeout in seconds
 
         Returns:
