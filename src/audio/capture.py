@@ -413,7 +413,7 @@ class AudioCapture:
                 # Device is invalid, skip it
                 print(f"Skipping invalid device: {device.get('name', 'Unknown')}")
                 continue
-            
+
             channels_list.append(channels)
             rates.append(int(sample_rate))
 
