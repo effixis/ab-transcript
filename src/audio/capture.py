@@ -100,7 +100,7 @@ class AudioCapture:
         try:
             # Verify device exists
             device_info = pa.get_device_info_by_index(device_index)
-            if device_info['maxInputChannels'] == 0:
+            if device_info["maxInputChannels"] == 0:
                 pa.terminate()
                 return None  # Not an input device
         except Exception:
@@ -400,11 +400,6 @@ class AudioCapture:
             else:
                 # Use stereo for devices that support it
                 channels = 2
-            if sample_rate is None:
-                # Device is invalid, skip it
-                print(f"Skipping invalid device: {device.get('name', 'Unknown')}")
-                continue
-            channels_list.append(channels)
 
             # Safely get sample rate
             sample_rate = device.get("default_sample_rate", 44100)
@@ -414,6 +409,12 @@ class AudioCapture:
             # Verify the sample rate is actually supported
             device_idx = device["index"]
             sample_rate = self.get_supported_sample_rate(device_idx, channels, int(sample_rate))
+            if sample_rate is None:
+                # Device is invalid, skip it
+                print(f"Skipping invalid device: {device.get('name', 'Unknown')}")
+                continue
+            
+            channels_list.append(channels)
             rates.append(int(sample_rate))
 
         # Create output directory
