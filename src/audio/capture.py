@@ -93,9 +93,19 @@ class AudioCapture:
             preferred_rate: Preferred sample rate (default: 44100)
 
         Returns:
-            Supported sample rate, or 44100 if none found
+            Supported sample rate, or None if device is invalid
         """
         pa = pyaudio.PyAudio()
+
+        try:
+            # Verify device exists
+            device_info = pa.get_device_info_by_index(device_index)
+            if device_info['maxInputChannels'] == 0:
+                pa.terminate()
+                return None  # Not an input device
+        except Exception:
+            pa.terminate()
+            return None  # Invalid device
 
         # Try common sample rates in order of preference
         rates_to_try = [preferred_rate, 44100, 48000, 22050, 16000, 8000]
@@ -390,6 +400,10 @@ class AudioCapture:
             else:
                 # Use stereo for devices that support it
                 channels = 2
+            if sample_rate is None:
+                # Device is invalid, skip it
+                print(f"Skipping invalid device: {device.get('name', 'Unknown')}")
+                continue
             channels_list.append(channels)
 
             # Safely get sample rate
