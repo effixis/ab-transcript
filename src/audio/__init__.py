@@ -24,10 +24,7 @@ Example usage:
     result = transcriber.transcribe_multiple(audio_files, device_names)
 """
 
-# Import server-side components (no pyaudio dependency)
-from .diarization import PyannoteDiarizer, assign_speakers_to_segments
-from .summarizer import MeetingSummarizer, summarize_transcript
-from .transcription import AudioTranscriber
+# Import basic utilities (always available)
 from .utils import (
     categorize_devices,
     format_timestamp,
@@ -37,6 +34,15 @@ from .utils import (
     normalize_audio,
     save_audio_array,
 )
+
+# Conditional imports for server-side components
+try:
+    from .diarization import PyannoteDiarizer, assign_speakers_to_segments
+    from .summarizer import MeetingSummarizer, summarize_transcript
+    from .transcription import AudioTranscriber
+except ImportError:
+    # These modules are not available in client-only builds
+    pass
 
 
 def __getattr__(name):

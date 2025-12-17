@@ -46,6 +46,7 @@ hiddenimports = [
     'streamlit.runtime',
     'streamlit.runtime.scriptrunner',
     'streamlit.runtime.scriptrunner.script_runner',
+    'streamlit.runtime.scriptrunner.magic_funcs',
     'streamlit.runtime.state',
     'streamlit.runtime.state.session_state',
     'streamlit.web',
