@@ -11,7 +11,7 @@ the server components (no Flask, no ML models).
 
 import sys
 from pathlib import Path
-from PyInstaller.utils.hooks import copy_metadata
+from PyInstaller.utils.hooks import copy_metadata, collect_data_files
 
 block_cipher = None
 
@@ -24,6 +24,9 @@ datas += copy_metadata('altair')
 datas += copy_metadata('pillow')
 datas += copy_metadata('numpy')
 datas += copy_metadata('requests')
+
+# Copy Streamlit's static files (HTML, CSS, JS)
+datas += collect_data_files('streamlit')
 
 # Data files to include
 datas += [

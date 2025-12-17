@@ -40,6 +40,8 @@ if __name__ == "__main__":
         "--browser.gatherUsageStats=false",
         "--server.port=8501",
         "--server.address=localhost",
+        "--global.developmentMode=false",
     ]
 
-    sys.exit(stcli.main())
+    # sys.exit(stcli.main())
+    print(stcli.main())
