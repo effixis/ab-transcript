@@ -86,37 +86,34 @@ class AudioCapture:
     def get_supported_sample_rate(self, device_index: int, channels: int, preferred_rate: int = 44100) -> int:
         """
         Find a supported sample rate for the device.
-        
+
         Args:
             device_index: Audio device index
             channels: Number of channels to use
             preferred_rate: Preferred sample rate (default: 44100)
-            
+
         Returns:
             Supported sample rate, or 44100 if none found
         """
         pa = pyaudio.PyAudio()
-        
+
         # Try common sample rates in order of preference
         rates_to_try = [preferred_rate, 44100, 48000, 22050, 16000, 8000]
         # Remove duplicates while preserving order
         rates_to_try = list(dict.fromkeys(rates_to_try))
-        
+
         for rate in rates_to_try:
             try:
                 # Test if this rate is supported
                 supported = pa.is_format_supported(
-                    rate,
-                    input_device=device_index,
-                    input_channels=channels,
-                    input_format=pyaudio.paInt16
+                    rate, input_device=device_index, input_channels=channels, input_format=pyaudio.paInt16
                 )
                 if supported:
                     pa.terminate()
                     return int(rate)
             except Exception:
                 continue
-        
+
         pa.terminate()
         return 44100  # Fallback
 
@@ -399,8 +396,9 @@ class AudioCapture:
             sample_rate = device.get("default_sample_rate", 44100)
             if sample_rate <= 0:
                 sample_rate = 44100
-            
+
             # Verify the sample rate is actually supported
+            device_idx = device["index"]
             sample_rate = self.get_supported_sample_rate(device_idx, channels, int(sample_rate))
             rates.append(int(sample_rate))
 
