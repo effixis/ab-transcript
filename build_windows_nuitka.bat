@@ -158,7 +158,7 @@ echo.
     --standalone ^
     --onefile ^
     --windows-console-mode=attach ^
-    --enable-plugin=anti-bloat ^
+    --disable-plugin=anti-bloat ^
     --noinclude-pytest-mode=nofollow ^
     --noinclude-setuptools-mode=nofollow ^
     --noinclude-IPython-mode=nofollow ^
@@ -181,7 +181,6 @@ echo.
     --file-version=0.1.0 ^
     --product-version=0.1.0 ^
     --file-description="Audio recording client for speech-to-text transcription" ^
-    --windows-icon-from-ico=icon.ico ^
     --assume-yes-for-downloads ^
     --show-progress ^
     launcher.py
