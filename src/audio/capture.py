@@ -12,16 +12,16 @@ Key features:
 - Thread-safe recording with error handling
 """
 
+import math
 import os
 import queue
+import struct
 import sys
 import threading
 import time
 import wave
 from datetime import datetime
 from typing import Dict, List
-
-import numpy as np
 
 # Platform-specific audio library import
 if sys.platform == "win32":
@@ -170,9 +170,12 @@ class AudioCapture:
 
             if frames:
                 audio_data = b"".join(frames)
-                audio_array = np.frombuffer(audio_data, dtype=np.int16)
-                audio_float = audio_array.astype(np.float32) / 32768.0
-                level = np.sqrt(np.mean(audio_float**2))
+                # Convert bytes to int16 values using struct
+                num_samples = len(audio_data) // 2
+                audio_samples = struct.unpack(f"<{num_samples}h", audio_data)
+                # Calculate RMS: square root of mean of squares
+                sum_squares = sum((sample / 32768.0) ** 2 for sample in audio_samples)
+                level = math.sqrt(sum_squares / num_samples) if num_samples > 0 else 0.0
                 return float(level)
 
             return 0.0

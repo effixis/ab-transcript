@@ -22,7 +22,6 @@ project_root = Path.cwd()
 datas = copy_metadata('streamlit')
 datas += copy_metadata('altair')
 datas += copy_metadata('pillow')
-datas += copy_metadata('numpy')
 datas += copy_metadata('requests')
 
 # Copy Streamlit's static files (HTML, CSS, JS)
@@ -59,7 +58,6 @@ hiddenimports = [
     'pyaudiowpatch',  # Windows-specific
     'requests',
     'dotenv',
-    'numpy',
     'altair',
     'altair.vegalite.v5',
     'altair.vegalite.v5.schema',
