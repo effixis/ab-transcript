@@ -10,67 +10,25 @@ echo Building spch2txt Recorder Client (Nuitka)
 echo ========================================
 echo.
 
-REM Try to find Python using multiple methods
-set PYTHON_CMD=
+REM Set Python command to use Python 3.12
+set PYTHON_CMD=py -3.12
 
-REM Method 1: Try py launcher (recommended on Windows)
-py --version >nul 2>&1
-if not errorlevel 1 (
-    set PYTHON_CMD=py
-    echo Found Python via launcher: 
-    py --version
-    goto :python_found
-)
-
-REM Method 2: Try python command
-python --version >nul 2>&1
-if not errorlevel 1 (
-    set PYTHON_CMD=python
-    echo Found Python: 
-    python --version
-    goto :python_found
+REM Verify Python 3.12 is available
+%PYTHON_CMD% --version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo ERROR: Python 3.12 not found!
+    echo.
+    echo Please install Python 3.12 from:
+    echo https://www.python.org/downloads/
+    echo.
+    echo Make sure to check "Add Python to PATH" during installation.
+    pause
+    exit /b 1
 )
 
-REM Method 3: Try python3 command
-python3 --version >nul 2>&1
-if not errorlevel 1 (
-    set PYTHON_CMD=python3
-    echo Found Python3: 
-    python3 --version
-    goto :python_found
-)
-
-REM Method 4: Check common installation paths
-if exist "C:\Python313\python.exe" (
-    set PYTHON_CMD=C:\Python313\python.exe
-    echo Found Python at: C:\Python313\python.exe
-    goto :python_found
-)
-if exist "C:\Python312\python.exe" (
-    set PYTHON_CMD=C:\Python312\python.exe
-    echo Found Python at: C:\Python312\python.exe
-    goto :python_found
-)
-if exist "C:\Python311\python.exe" (
-    set PYTHON_CMD=C:\Python311\python.exe
-    echo Found Python at: C:\Python311\python.exe
-    goto :python_found
-)
-if exist "C:\Python310\python.exe" (
-    set PYTHON_CMD=C:\Python310\python.exe
-    echo Found Python at: C:\Python310\python.exe
-    goto :python_found
-)
-
-echo.
-echo ERROR: Python not found!
-echo.
-echo Please install Python 3.10 or higher from:
-echo https://www.python.org/downloads/
-echo.
-echo Make sure to check "Add Python to PATH" during installation.
-pause
-exit /b 1
+echo Found Python 3.12:
+%PYTHON_CMD% --version
 
 :python_found
 echo.
@@ -107,15 +65,8 @@ if errorlevel 1 (
 )
 echo.
 
-REM Check for C compiler (informational only)
-echo Checking for C compiler...
-where cl >nul 2>&1
-if errorlevel 1 (
-    echo Microsoft Visual C++ compiler not found.
-) else (
-    echo Found Microsoft Visual C++ compiler (will use MinGW64 anyway)
-)
-echo Nuitka will download and use MinGW64 automatically...
+REM Using MinGW64 compiler
+echo Using MinGW64 compiler (Nuitka will download if needed)...
 echo.
 
 REM Install runtime dependencies
@@ -133,8 +84,6 @@ echo Installing Requests (HTTP client)...
 %PYTHON_CMD% -m pip install requests --quiet
 echo Installing Python-dotenv (config)...
 %PYTHON_CMD% -m pip install python-dotenv --quiet
-echo Installing NumPy (arrays)...
-%PYTHON_CMD% -m pip install numpy --quiet
 echo.
 echo All dependencies installed!
 echo.
@@ -167,7 +116,6 @@ echo.
     --include-package=pyaudiowpatch ^
     --include-package=requests ^
     --include-package=dotenv ^
-    --include-package=numpy ^
     --include-package-data=streamlit ^
     --include-data-dir=src/audio=src/audio ^
     --include-data-dir=src/client=src/client ^
