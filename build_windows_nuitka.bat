@@ -167,6 +167,7 @@ echo This will take 10-30 minutes - please be patient
 echo ========================================
 echo.
 
+REM Store output and show it
 %PYTHON_CMD% -m nuitka ^
     --standalone ^
     --onefile ^
@@ -196,21 +197,29 @@ echo.
     --file-description="Audio recording client for speech-to-text transcription" ^
     --windows-icon-from-ico=icon.ico ^
     --assume-yes-for-downloads ^
+    --show-progress ^
     launcher.py
 
-if errorlevel 1 (
+set BUILD_ERROR=%errorlevel%
+
+if %BUILD_ERROR% neq 0 (
     echo.
-    echo ERROR: Nuitka build failed!
+    echo ========================================
+    echo ERROR: Nuitka build failed! (Error code: %BUILD_ERROR%)
+    echo ========================================
     echo.
     echo Common issues:
     echo 1. Missing C compiler - see instructions above
     echo 2. Out of memory - close other applications
     echo 3. Antivirus blocking - temporarily disable
+    echo 4. Missing dependencies - check output above
     echo.
-    echo Try running with --show-progress for more details:
+    echo Full command that failed:
     echo %PYTHON_CMD% -m nuitka --show-progress launcher.py
-    pause
-    exit /b 1
+    echo.
+    echo Press any key to exit...
+    pause >nul
+    exit /b %BUILD_ERROR%
 )
 
 REM Rename output directory
