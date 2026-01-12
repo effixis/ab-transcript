@@ -107,29 +107,15 @@ if errorlevel 1 (
 )
 echo.
 
-REM Check for C compiler (required by Nuitka)
+REM Check for C compiler (informational only)
 echo Checking for C compiler...
 where cl >nul 2>&1
 if errorlevel 1 (
-    echo.
-    echo WARNING: Microsoft Visual C++ compiler not found!
-    echo.
-    echo Nuitka requires a C compiler. You have two options:
-    echo.
-    echo Option 1 - MinGW64 (Recommended for quick builds):
-    echo   1. Download: https://github.com/niXman/mingw-builds-binaries/releases
-    echo   2. Extract and add to PATH
-    echo   3. Nuitka will use --mingw64 flag
-    echo.
-    echo Option 2 - Visual Studio Build Tools (Better optimization):
-    echo   1. Download: https://visualstudio.microsoft.com/downloads/
-    echo   2. Install "Desktop development with C++"
-    echo   3. Run this script from "Developer Command Prompt"
-    echo.
-    echo Do you want to continue anyway? Nuitka will try to download MinGW64.
-    choice /C YN /M "Continue"
-    if errorlevel 2 exit /b 1
+    echo Microsoft Visual C++ compiler not found.
+) else (
+    echo Found Microsoft Visual C++ compiler (will use MinGW64 anyway)
 )
+echo Nuitka will download and use MinGW64 automatically...
 echo.
 
 REM Install runtime dependencies
@@ -162,13 +148,13 @@ if exist "dist\SpchToText_Recorder_Nuitka" (
 REM Build with Nuitka
 echo.
 echo ========================================
-echo Building with Nuitka...
+echo Building with Nuitka (using MinGW64)...
 echo This will take 10-30 minutes - please be patient
 echo ========================================
 echo.
 
-REM Store output and show it
 %PYTHON_CMD% -m nuitka ^
+    --mingw64 ^
     --standalone ^
     --onefile ^
     --windows-console-mode=attach ^
