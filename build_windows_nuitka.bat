@@ -118,12 +118,8 @@ echo.
     --include-package=pyaudiowpatch ^
     --include-package=requests ^
     --include-package=dotenv ^
-    --include-package=src ^
-    --include-package=src.audio ^
-    --include-package=src.client ^
-    --include-package=src.ui ^
     --include-package-data=streamlit ^
-    --include-data-file=src/config.py=src/config.py ^
+    --include-data-dir=src=src ^
     --include-data-file=.env.example=.env.example ^
     --output-dir=dist ^
     --output-filename=SpchToText_Recorder.exe ^
