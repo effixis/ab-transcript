@@ -89,9 +89,12 @@ echo All dependencies installed!
 echo.
 
 REM Clean previous build
-if exist "dist\SpchToText_Recorder_Nuitka" (
+if exist "dist\launcher.dist" (
     echo Cleaning previous build...
-    rmdir /s /q "dist\SpchToText_Recorder_Nuitka"
+    rmdir /s /q "launcher.dist"
+)
+if exist "dist\launcher.build" (
+    rmdir /s /q "launcher.build"
 )
 
 REM Build with Nuitka
@@ -105,8 +108,7 @@ echo.
 %PYTHON_CMD% -m nuitka ^
     --mingw64 ^
     --standalone ^
-    --onefile ^
-    --windows-console-mode=attach ^
+    --windows-console-mode=force ^
     --disable-plugin=anti-bloat ^
     --noinclude-pytest-mode=nofollow ^
     --noinclude-setuptools-mode=nofollow ^
@@ -116,10 +118,11 @@ echo.
     --include-package=pyaudiowpatch ^
     --include-package=requests ^
     --include-package=dotenv ^
+    --include-package=src ^
+    --include-package=src.audio ^
+    --include-package=src.client ^
+    --include-package=src.ui ^
     --include-package-data=streamlit ^
-    --include-data-dir=src/audio=src/audio ^
-    --include-data-dir=src/client=src/client ^
-    --include-data-dir=src/ui=src/ui ^
     --include-data-file=src/config.py=src/config.py ^
     --include-data-file=.env.example=.env.example ^
     --output-dir=dist ^
@@ -155,28 +158,9 @@ if %BUILD_ERROR% neq 0 (
     exit /b %BUILD_ERROR%
 )
 
-REM Rename output directory
-if exist "launcher.dist" (
-    move "launcher.dist" "dist\SpchToText_Recorder_Nuitka"
-)
-
 echo.
 echo ========================================
 echo Build completed successfully!
 echo ========================================
-echo.
-echo Executable location: dist\SpchToText_Recorder_Nuitka\SpchToText_Recorder.exe
-echo.
-echo Benefits of Nuitka build:
-echo - Compiled native code (better performance)
-echo - No PyInstaller bootloader (better AV compatibility)
-echo - No runtime unpacking (faster startup)
-echo.
-echo To run the application:
-echo 1. Copy the 'dist\SpchToText_Recorder_Nuitka' folder to your desired location
-echo 2. Create a .env file in that folder with your API server URL:
-echo    API_BASE_URL=http://your-server:5001
-echo 3. Run SpchToText_Recorder.exe
-echo.
 
 pause
